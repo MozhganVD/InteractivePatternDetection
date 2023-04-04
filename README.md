@@ -1,6 +1,6 @@
 # Interactive Multi-Interest Process Pattern Discovery Tool
 
-This repository provides implementations for discovering outcome-oriented process patterns with three tailored interest functions.
+This repository provides implementations for discovering outcome-oriented process patterns with three tailored interest functions discussed in paper titled *"Interactive Multi-Interest Process Pattern Discovery"*.
 
 # Usage
 To use the implemented tool, you need to have a labeled event log in .cvs format (Use the event log in this repo as exmaple), then clone the projetc and follow the below steps:
@@ -15,7 +15,7 @@ To use the implemented tool, you need to have a labeled event log in .cvs format
 4. Check desired interest functions (we recommend using all of them) and ```Start Pattern Disocvery```
 ![IMAGE](pic/setting_1.PNG)
 
-5. Running on a big dataset for the first time would take some time for calculating the pair-wised case distances (:coffee:), then you have the results in new window:
+5. Running on a big dataset for the first time would take some time for calculating the pairwise case distances (:coffee:), then you have the results in new window:
 
 ![IMAGE](pic/Results_1.PNG)
 
