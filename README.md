@@ -8,7 +8,7 @@ To use the implemented tool, you need to have a labeled event log in .cvs format
 
 ```pip install -r requirements.txt```
 
-2. Run ```GUI_IMPresseD_tool.py```, then continu the discovery procedure using the GUI:
+2. Run ```GUI_IMPresseD_tool.py```, then continue the discovery procedure using the GUI:
 ![IMAGE](pic/Settings.PNG)
 
 3. Set and save the required settings and click ```Save Setting```
