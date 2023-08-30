@@ -9,7 +9,7 @@ from sklearn.preprocessing import LabelEncoder
 from pylab import figure
 from sklearn.impute import KNNImputer
 from sklearn import preprocessing
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score
 #from sklearn.cluster import KMeans
 #from sklearn.model_selection import train_test_split
 # from sklearn.linear_model import LinearRegression

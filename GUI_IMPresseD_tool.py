@@ -6,7 +6,6 @@ from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
 import os
-import sys
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -14,7 +13,6 @@ import pm4py
 from matplotlib import pyplot as plt
 import seaborn as sb
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.pyplot import figure
 from paretoset import paretoset
 import pyperclip
 from pm4py.algo.filtering.log.variants import variants_filter
@@ -139,15 +137,15 @@ class GUI_IMOPD_IKNL_tool:
             self.df[self.case_id] = self.df[self.case_id].astype(str)
             self.df[self.case_id] = self.df[self.case_id].astype(str)
 
-            activities_freq = self.df.groupby(by=[self.activity])[self.case_id].count()
-            activities_freq = set(activities_freq[activities_freq < 3].index.tolist())
-            to_remove = []
-            for case in self.df[self.case_id].unique():
-                trace = self.df.loc[self.df[self.case_id] == case, self.activity].tolist()
-                if len(set(trace).intersection(activities_freq)) != 0:
-                    to_remove.append(case)
-
-            self.df = self.df[~self.df[self.case_id].isin(to_remove)]
+            # activities_freq = self.df.groupby(by=[self.activity])[self.case_id].count()
+            # activities_freq = set(activities_freq[activities_freq < 3].index.tolist())
+            # to_remove = []
+            # for case in self.df[self.case_id].unique():
+            #     trace = self.df.loc[self.df[self.case_id] == case, self.activity].tolist()
+            #     if len(set(trace).intersection(activities_freq)) != 0:
+            #         to_remove.append(case)
+            #
+            # self.df = self.df[~self.df[self.case_id].isin(to_remove)]
             color_codes = ["#" + ''.join([random.choice('000123456789ABCDEF') for i in range(6)])
                            for j in range(len(self.df[self.activity].unique()))]
 
@@ -267,7 +265,7 @@ class GUI_IMOPD_IKNL_tool:
         self.table_result_frame = tk.Frame(self.result_window)
         self.table_result_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         # add a message on top the table
-        self.table_result_text = tk.Label(self.table_result_frame, text="Right click on the your desired pattern to"
+        self.table_result_text = tk.Label(self.table_result_frame, text="Right click on your desired pattern to"
                                                                         " put in its name on the clipboard")
         self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
         # add tree widget for showing the results
@@ -461,7 +459,7 @@ class GUI_IMOPD_IKNL_tool:
             table_result_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
             # add a message on top the table
-            self.table_result_text = tk.Label(table_result_frame, text="Right click on the your desired pattern to"
+            self.table_result_text = tk.Label(table_result_frame, text="Right click on your desired pattern to"
                                                                        " put in its name on the clipboard")
             self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
 
@@ -712,7 +710,7 @@ class GUI_IMOPD_IKNL_tool:
             table_result_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
             # add a message on top the table
-            self.table_result_text = tk.Label(table_result_frame, text="Right click on the your desired pattern to"
+            self.table_result_text = tk.Label(table_result_frame, text="Right click on your desired pattern to"
                                                                        " put in its name on the clipboard")
             self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
 

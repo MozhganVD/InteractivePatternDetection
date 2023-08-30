@@ -1,23 +1,16 @@
-from paretoset import paretoset
 import pandas as pd
 import networkx as nx
 import pm4py
 import numpy as np
-import seaborn as sb
 import networkx.algorithms.isomorphism as iso
 from pm4py.algo.filtering.log.variants import variants_filter
 from pm4py.objects.log.obj import EventLog
 import matplotlib.pyplot as plt
-from pylab import figure
-import random
-import os
 from scipy.spatial.distance import pdist
-from scipy.stats import spearmanr
 from sklearn import preprocessing
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.preprocessing import LabelEncoder
 from tools import create_embedded_pattern_in_trace, update_pattern_dict
-
 
 def VariantSelection(main_data, case_id, activities, timestamp):
 
