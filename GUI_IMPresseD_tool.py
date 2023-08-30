@@ -7,6 +7,7 @@ from tkinter import filedialog
 from tkinter import messagebox
 import os
 import sys
+import networkx as nx
 import numpy as np
 import pandas as pd
 import pm4py
@@ -19,7 +20,7 @@ import pyperclip
 from pm4py.algo.filtering.log.variants import variants_filter
 from pm4py.objects.log.obj import EventLog
 from IMIPD import VariantSelection, create_pattern_attributes, calculate_pairwise_case_distance, Trace_graph_generator, \
-    Pattern_extension, plot_patterns
+    Pattern_extension, plot_patterns, Single_Pattern_Extender
 
 
 class GUI_IMOPD_IKNL_tool:
@@ -136,9 +137,6 @@ class GUI_IMOPD_IKNL_tool:
             self.df[self.activity] = self.df[self.activity].str.replace("_", "-")
             self.df[self.timestamp] = pd.to_datetime(self.df[self.timestamp])
             self.df[self.case_id] = self.df[self.case_id].astype(str)
-            # self.df.loc[self.df[self.outcome] == 'deviant', self.outcome] = 1
-            # self.df.loc[self.df[self.outcome] == 'regular', self.outcome] = 0
-
             self.df[self.case_id] = self.df[self.case_id].astype(str)
 
             activities_freq = self.df.groupby(by=[self.activity])[self.case_id].count()
@@ -150,7 +148,6 @@ class GUI_IMOPD_IKNL_tool:
                     to_remove.append(case)
 
             self.df = self.df[~self.df[self.case_id].isin(to_remove)]
-
             color_codes = ["#" + ''.join([random.choice('000123456789ABCDEF') for i in range(6)])
                            for j in range(len(self.df[self.activity].unique()))]
 
@@ -180,11 +177,15 @@ class GUI_IMOPD_IKNL_tool:
             # create a checkbox and combo box for three interest functions
             self.interest_function_frame = tk.Frame(self.master)
             self.interest_function_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
-            self.correlation_function = tk.IntVar()
-            self.interest_function_checkbox_1 = tk.Checkbutton(self.interest_function_frame,
-                                                               text="Correlation interest function",
-                                                               variable=self.correlation_function)
-            self.interest_function_checkbox_1.pack(side=tk.LEFT, padx=10, pady=10)
+            # self.correlation_function = tk.IntVar()
+            # set a text box for the correlation function
+            self.interest_function_label_1 = tk.Label(self.interest_function_frame,
+                                                        text="Correlation interest function")
+            self.interest_function_label_1.pack(side=tk.LEFT, padx=10, pady=10)
+            # self.interest_function_checkbox_1 = tk.Checkbutton(self.interest_function_frame,
+            #                                                    text="Correlation interest function",
+            #                                                    variable=self.correlation_function)
+            # self.interest_function_checkbox_1.pack(side=tk.LEFT, padx=10, pady=10)
             self.direction_correlation_function = tk.StringVar()
             self.direction_combobox_1 = ttk.Combobox(self.interest_function_frame,
                                                      textvariable=self.direction_correlation_function, state="readonly")
@@ -194,11 +195,14 @@ class GUI_IMOPD_IKNL_tool:
 
             self.interest_function_frame_2 = tk.Frame(self.master)
             self.interest_function_frame_2.pack(side=tk.BOTTOM, padx=10, pady=10)
-            self.frequency_function = tk.IntVar()
-            self.interest_function_checkbox_2 = tk.Checkbutton(self.interest_function_frame_2,
-                                                               text="Frequency interest function",
-                                                               variable=self.frequency_function)
-            self.interest_function_checkbox_2.pack(side=tk.LEFT, padx=10, pady=10)
+            # self.frequency_function = tk.IntVar()
+            self.interest_function_label_2 = tk.Label(self.interest_function_frame_2,
+                                                        text="Frequency interest function")
+            self.interest_function_label_2.pack(side=tk.LEFT, padx=10, pady=10)
+            # self.interest_function_checkbox_2 = tk.Checkbutton(self.interest_function_frame_2,
+            #                                                    text="Frequency interest function",
+            #                                                    variable=self.frequency_function)
+            # self.interest_function_checkbox_2.pack(side=tk.LEFT, padx=10, pady=10)
             self.direction_frequency_function = tk.StringVar()
             self.direction_combobox_2 = ttk.Combobox(self.interest_function_frame_2,
                                                      textvariable=self.direction_frequency_function, state="readonly")
@@ -208,11 +212,14 @@ class GUI_IMOPD_IKNL_tool:
 
             self.interest_function_frame_3 = tk.Frame(self.master)
             self.interest_function_frame_3.pack(side=tk.BOTTOM, padx=10, pady=10)
-            self.distance_function = tk.IntVar()
-            self.interest_function_checkbox_3 = tk.Checkbutton(self.interest_function_frame_3,
-                                                               text="Case Distance interest function",
-                                                               variable=self.distance_function)
-            self.interest_function_checkbox_3.pack(side=tk.LEFT, padx=10, pady=10)
+            # self.distance_function = tk.IntVar()
+            self.interest_function_label_3 = tk.Label(self.interest_function_frame_3,
+                                                        text="Case Distance interest function")
+            self.interest_function_label_3.pack(side=tk.LEFT, padx=10, pady=10)
+            # self.interest_function_checkbox_3 = tk.Checkbutton(self.interest_function_frame_3,
+            #                                                    text="Case Distance interest function",
+            #                                                    variable=self.distance_function)
+            # self.interest_function_checkbox_3.pack(side=tk.LEFT, padx=10, pady=10)
             self.direction_distance_function = tk.StringVar()
             self.direction_combobox_3 = ttk.Combobox(self.interest_function_frame_3,
                                                      textvariable=self.direction_distance_function, state="readonly")
@@ -247,37 +254,24 @@ class GUI_IMOPD_IKNL_tool:
 
         # create a frame for showing the results
         self.result_frame = tk.Frame(self.result_window)
-        self.result_frame.pack(side=tk.TOP)  # , fill=tk.BOTH, expand=True
-
-        # create a scrollbar for the result frame
-        # self.result_scrollbar = tk.Scrollbar(self.result_frame)
-        # self.result_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
+        self.result_frame.pack(side=tk.TOP)
         # create a picture canvas for showing the results
         self.result_canvas = tk.Canvas(self.result_frame)
         self.result_canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
-        # # configure the scrollbar
-        # self.result_scrollbar.config(command=self.result_canvas.yview)
-
         # check if any categorical and numerical attributes are selected
         if len(self.categorical_attributes) > 0:
             self.with_categorical = True
         if len(self.numerical_attributes) > 0:
             self.with_numerical = True
-
         # add a frame for showing the more results beside canvas
         self.table_result_frame = tk.Frame(self.result_window)
         self.table_result_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
         # add a message on top the table
         self.table_result_text = tk.Label(self.table_result_frame, text="Right click on the your desired pattern to"
                                                                         " put in its name on the clipboard")
         self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
-
         # add tree widget for showing the results
         self.tree = self.creat_table(self.table_result_frame)
-
         # create a new thread for running the detection
         self.thread = threading.Thread(target=self.run_detection)
         self.thread.start()
@@ -343,18 +337,20 @@ class GUI_IMOPD_IKNL_tool:
                                                         self.pairwise_distances_array, self.pair_cases,
                                                         self.start_search_points)
 
-        self.pareto_features = []
-        self.pareto_sense = []
+        self.pareto_features = ['Outcome_Interest', 'Frequency_Interest', 'Case_Distance_Interest']
+        self.pareto_sense = [self.direction_correlation_function.get(),
+                             self.direction_frequency_function.get(),
+                             self.direction_distance_function.get()]
         # check if the checkbox for interest function is checked
-        if self.correlation_function.get():
-            self.pareto_features.append('Outcome_Interest')
-            self.pareto_sense.append(self.direction_correlation_function.get())
-        if self.frequency_function.get():
-            self.pareto_features.append('Frequency_Interest')
-            self.pareto_sense.append(self.direction_frequency_function.get())
-        if self.distance_function.get():
-            self.pareto_features.append('Case_Distance_Interest')
-            self.pareto_sense.append(self.direction_distance_function.get())
+        # if self.correlation_function.get():
+        #     self.pareto_features.append('Outcome_Interest')
+        #     self.pareto_sense.append(self.direction_correlation_function.get())
+        # if self.frequency_function.get():
+        #     self.pareto_features.append('Frequency_Interest')
+        #     self.pareto_sense.append(self.direction_frequency_function.get())
+        # if self.distance_function.get():
+        #     self.pareto_features.append('Case_Distance_Interest')
+        #     self.pareto_sense.append(self.direction_distance_function.get())
 
         Objectives_attributes = activity_attributes[self.pareto_features]
         if 'Outcome_Correlation' in self.pareto_features:
@@ -470,19 +466,20 @@ class GUI_IMOPD_IKNL_tool:
             self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
 
             # add tree widget for showing the results
-            tree = self.creat_table(table_result_frame)
+            self.tree = self.creat_table(table_result_frame)
 
             # create a new thread for running the detection
             self.progress_bar_2.start(10)
             # self.run_extension()
-            thread = threading.Thread(target=self.run_extension(tree))
+            thread = threading.Thread(target=self.run_extension(self.tree))
             thread.start()
 
     def run_extension(self, tree):
         self.all_pattern_dictionary = dict()
         self.All_Pareto_front = dict()
-        EventLog_graphs = dict()
-        Patterns_Dictionary = dict()
+        self.EventLog_graphs = dict()
+        self.Patterns_Dictionary = dict()
+        self.all_variants = dict()
         filtered_cases = self.df.loc[self.df[self.activity] == self.Core_activity, self.case_id]
         filtered_main_data = self.df[self.df[self.case_id].isin(filtered_cases)]
         # Keep only variants and its frequency
@@ -505,25 +502,26 @@ class GUI_IMOPD_IKNL_tool:
             pp_log.append(variants[k][0])
 
         selected_variants = pm4py.convert_to_dataframe(pp_log)
+        self.all_variants[self.Core_activity] = selected_variants
         timestamp = 'time:timestamp'
         for case in selected_variants[self.case_id].unique():
             case_data = selected_variants[selected_variants[self.case_id] == case]
-            if case not in EventLog_graphs.keys():
+            if case not in self.EventLog_graphs.keys():
                 Trace_graph = Trace_graph_generator(selected_variants, self.patient_data, self.Core_activity, 1,
                                                     case, self.color_act_dict,
                                                     self.case_id, self.activity, timestamp)
 
-                EventLog_graphs[case] = Trace_graph.copy()
+                self.EventLog_graphs[case] = Trace_graph.copy()
             else:
-                Trace_graph = EventLog_graphs[case].copy()
+                Trace_graph = self.EventLog_graphs[case].copy()
 
-            Patterns_Dictionary = Pattern_extension(case_data, Trace_graph, self.Core_activity,
-                                                    self.case_id, Patterns_Dictionary)
+            self.Patterns_Dictionary = Pattern_extension(case_data, Trace_graph, self.Core_activity,
+                                                         self.case_id, self.Patterns_Dictionary)
 
-        self.patient_data[list(Patterns_Dictionary.keys())] = 0
-        for PID in Patterns_Dictionary:
-            for CaseID in np.unique(Patterns_Dictionary[PID]['Instances']['case']):
-                variant_frequency_case = Patterns_Dictionary[PID]['Instances']['case'].count(CaseID)
+        self.patient_data[list(self.Patterns_Dictionary.keys())] = 0
+        for PID in self.Patterns_Dictionary:
+            for CaseID in np.unique(self.Patterns_Dictionary[PID]['Instances']['case']):
+                variant_frequency_case = self.Patterns_Dictionary[PID]['Instances']['case'].count(CaseID)
                 Other_cases = \
                     selected_variants.loc[selected_variants[self.case_id] == CaseID, 'case:CaseIDs'].tolist()[
                         0]
@@ -531,7 +529,7 @@ class GUI_IMOPD_IKNL_tool:
                     self.patient_data.loc[self.patient_data[self.case_id] == Ocase, PID] = variant_frequency_case
 
         pattern_attributes = create_pattern_attributes(self.patient_data, self.outcome,
-                                                       self.Core_activity, list(Patterns_Dictionary.keys()),
+                                                       self.Core_activity, list(self.Patterns_Dictionary.keys()),
                                                        self.pairwise_distances_array, self.pair_cases,
                                                        self.start_search_points)
 
@@ -543,9 +541,9 @@ class GUI_IMOPD_IKNL_tool:
         paretoset_patterns = pattern_attributes[mask]
 
         self.All_Pareto_front[self.Core_activity] = dict()
-        self.All_Pareto_front[self.Core_activity]['dict'] = Patterns_Dictionary
+        self.All_Pareto_front[self.Core_activity]['dict'] = self.Patterns_Dictionary
         self.All_Pareto_front[self.Core_activity]['variants'] = selected_variants
-        self.all_pattern_dictionary.update(Patterns_Dictionary)
+        self.all_pattern_dictionary.update(self.Patterns_Dictionary)
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -580,8 +578,8 @@ class GUI_IMOPD_IKNL_tool:
             col_numbers = int(np.ceil(ploting_features / 2))
             row_numbers = 2
 
-            fig, ax = plot_patterns(Patterns_Dictionary, row['patterns'], self.color_act_dict
-                                , pattern_attributes, dim=(row_numbers, col_numbers))
+            fig, ax = plot_patterns(self.Patterns_Dictionary, row['patterns'], self.color_act_dict
+                                    , pattern_attributes, dim=(row_numbers, col_numbers))
 
             # plot the distribution of numerical attributes for the pattern
             for ii, num in enumerate(self.numerical_attributes):
@@ -663,8 +661,189 @@ class GUI_IMOPD_IKNL_tool:
             messagebox.showinfo("Copied", "%s been copied to the clipboard" % value)
 
     def extension_more(self):
+        # get the input from the user
+        self.Core_pattern = self.text_holder_2.get("1.0", tk.END)
+        self.Core_pattern = self.Core_pattern[:-1]
 
-        pass
+        # check if the input is not empty
+        if self.Core_pattern == "":
+            messagebox.showerror("Error", "Please enter a foundational pattern for extension!")
+
+        # check if the input is not empty
+        elif self.Core_pattern not in self.Patterns_Dictionary.keys():
+            messagebox.showerror("Error", "Selected pattern is not valid!")
+
+        elif any(nx.get_edge_attributes(self.Patterns_Dictionary[self.Core_pattern]['pattern'], 'eventually').values()):
+            messagebox.showerror("Error", "Patterns including eventually relations are not supported yet for extension")
+        # if the input is valid
+        else:
+            # create a new windows for the results of extension
+            self.extension_window = tk.Toplevel(self.master)
+            self.extension_window.title("Extension Results")
+            self.extension_window.geometry("1000x900")
+            self.extension_window.resizable(False, False)
+            self.extension_window.grab_set()
+            self.extension_window.focus_set()
+            # add multiple tab for showing the results
+            self.tab_control = ttk.Notebook(self.extension_window)
+            self.tab_control.pack(expand=1, fill="both")
+            # add a tab for showing the results of extension
+            self.tab1 = ttk.Frame(self.tab_control)
+            self.tab_control.add(self.tab1, text="Pareto Front")
+
+            # add a progress bar for showing the progress of the extension
+            self.progress_bar_2 = ttk.Progressbar(self.tab1, orient="horizontal", length=200, mode="indeterminate")
+            self.progress_bar_2.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+            # add text holder for recieving input from user
+            self.text_holder_2 = tk.Text(self.tab1, height=1, width=50)
+            self.text_holder_2.pack(side=tk.TOP, padx=10, pady=10)
+
+            # add button for getting input from user
+            self.get_input_button = tk.Button(self.tab1, text="Pattern Extension", command=self.extension_more)
+            self.get_input_button.pack(side=tk.TOP, padx=10, pady=10)
+
+            # # show results on canvas
+            self.result_canvas2 = tk.Canvas(self.tab1)
+            self.result_canvas2.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+            # add a frame for showing the more results beside canvas
+            table_result_frame = tk.Frame(self.result_canvas2)
+            table_result_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+
+            # add a message on top the table
+            self.table_result_text = tk.Label(table_result_frame, text="Right click on the your desired pattern to"
+                                                                       " put in its name on the clipboard")
+            self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
+
+            # add tree widget for showing the results
+            self.tree = self.creat_table(table_result_frame)
+
+            # create a new thread for running the detection
+            self.progress_bar_2.start(10)
+            thread = threading.Thread(target=self.run_pattern_extension(self.tree))
+            thread.start()
+
+    def run_pattern_extension(self, tree):
+        Extension_2_patterns_list, self.Patterns_Dictionary, self.patient_data = Single_Pattern_Extender(
+            self.Core_pattern,
+            self.Patterns_Dictionary,
+            self.patient_data, self.EventLog_graphs,
+            self.all_variants)
+
+        result_dict = {'K': [], 'N': [], 'Pareto': [], 'All': []}
+        for obj in self.pareto_features:
+            result_dict[obj] = []
+        pattern_attributes = create_pattern_attributes(self.patient_data, self.outcome,
+                                                       self.Core_pattern, list(self.Patterns_Dictionary.keys()),
+                                                       self.pairwise_distances_array, self.pair_cases,
+                                                       self.start_search_points)
+        Objectives_attributes = pattern_attributes[self.pareto_features]
+        if 'OutcomeCorrelation' in self.pareto_features:
+            Objectives_attributes['OutcomeCorrelation'] = np.abs(Objectives_attributes['OutcomeCorrelation'])
+        mask = paretoset(Objectives_attributes, sense=self.pareto_sense)
+        paretoset_patterns = pattern_attributes[mask]
+
+        # plot the results on the canvas
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.set_xlabel(self.pareto_features[0])
+        ax.set_ylabel(self.pareto_features[1])
+        ax.set_zlabel(self.pareto_features[2])
+        for ticker, row in paretoset_patterns.iterrows():
+            ax.scatter(row[self.pareto_features[0]], row[self.pareto_features[1]], row[self.pareto_features[2]])
+            ax.text(row[self.pareto_features[0]], row[self.pareto_features[1]], row[self.pareto_features[2]],
+                    row['patterns'])
+
+        self.progress_bar_2.stop()
+        self.progress_bar_2.destroy()
+        canvas = FigureCanvasTkAgg(fig, master=self.result_canvas2)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        for ticker, row in paretoset_patterns.iterrows():
+            tree.insert("", tk.END, values=(row['patterns'], row['Frequency_Interest'],
+                                            row['Outcome_Interest'], row['Case_Distance_Interest']))
+
+        # create a tab for each pattern in the pareto front
+        for ticker, row in paretoset_patterns.iterrows():
+            tab_name = row['patterns']
+            # number_of_pattern = tab_name.split('_')[-1]
+            tab = ttk.Frame(self.tab_control)
+            self.tab_control.add(tab, text=tab_name)
+            self.tab_control.pack(expand=1, fill="both")
+            ploting_features = 2 + len(self.numerical_attributes) + len(self.categorical_attributes)
+
+            col_numbers = int(np.ceil(ploting_features / 2))
+            row_numbers = 2
+
+            fig, ax = plot_patterns(self.Patterns_Dictionary, row['patterns'], self.color_act_dict
+                                    , pattern_attributes, dim=(row_numbers, col_numbers))
+
+            # plot the distribution of numerical attributes for the pattern
+            for ii, num in enumerate(self.numerical_attributes):
+                # patient_data_core = self.patient_data[self.patient_data[self.Core_activity] != 0]
+                sb.distplot(self.patient_data.loc[self.patient_data[tab_name] == 0, num], ax=ax[0, ii + 1], color="g")
+                sb.distplot(self.patient_data.loc[self.patient_data[tab_name] > 0, num], ax=ax[0, ii + 1], color="r")
+                ax[0, ii + 1].set_title(num)
+                # ax[0, ii + 1].title.set_size(40)
+                ax[0, ii + 1].set_xlabel('')
+                # ax[0, ii + 1].set_ylabel('density')
+                # set font size for x and y axis
+                # ax[0, ii + 1].tick_params(axis='both', which='major', labelsize=16)
+
+            # plot pie chart for categorical attributes
+            r = 1
+            jj = 1
+            cmap = plt.get_cmap("tab20c")
+            for cat in self.categorical_attributes:
+                all_cat_features = self.patient_data[cat].unique().tolist()
+                all_cat_features.sort()
+
+                cat_features_outpattern = self.patient_data.loc[
+                    self.patient_data[tab_name] == 0, cat].unique().tolist()
+                cat_features_outpattern.sort()
+
+                cat_features_inpattern = self.patient_data.loc[self.patient_data[tab_name] > 0, cat].unique().tolist()
+                cat_features_inpattern.sort()
+
+                indexes = [all_cat_features.index(l) for l in cat_features_inpattern]
+                outdexes = [all_cat_features.index(l) for l in cat_features_outpattern]
+
+                all_feature_colors = cmap(np.arange(len(all_cat_features)) * 1)
+
+                outer_colors = all_feature_colors[outdexes]
+                inner_colors = all_feature_colors[indexes]
+
+                textprops = {"fontsize": 8}
+                ax[r, jj].pie(
+                    pd.DataFrame(
+                        self.patient_data.loc[self.patient_data[tab_name] == 0, cat].value_counts()).sort_index()[
+                        cat],
+                    radius=1,
+                    labels=cat_features_outpattern, colors=outer_colors, wedgeprops=dict(width=0.4, edgecolor='w'),
+                    textprops=textprops)
+
+                ax[r, jj].pie(
+                    pd.DataFrame(
+                        self.patient_data.loc[self.patient_data[tab_name] > 0, cat].value_counts()).sort_index()[cat],
+                    radius=1 - 0.4,
+                    labels=cat_features_inpattern, colors=inner_colors, wedgeprops=dict(width=0.4, edgecolor='w'),
+                    textprops=textprops)
+
+                ax[r, jj].set_title(cat)
+                # ax[r, jj].title.set_size(40)
+
+                jj += 1
+                if jj > 5:
+                    r += 1
+                    jj = 1
+
+            result_canvas = tk.Canvas(tab)
+            result_canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            canvas = FigureCanvasTkAgg(fig, master=result_canvas)
+            canvas.draw()
+            canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
 
 root = tk.Tk()

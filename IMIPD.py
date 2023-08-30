@@ -483,3 +483,152 @@ def defining_graph_pos(G):
         pos['end'] = np.array((loc_x, loc_y))
 
     return pos
+
+
+def Single_Pattern_Extender(chosen_pattern_ID, All_extended_patterns_2, patient_data, EventLog_graphs, all_variants):
+    Extension_3_patterns = []
+    Extended_patterns_at_stage = dict()
+    # for chosen_pattern_ID in All_extended_patterns_2:
+    new_patterns_for_core = []
+    Core_activity = chosen_pattern_ID.split("_")[0]
+    print('Core:  ' + Core_activity)
+    selected_variants = all_variants[Core_activity]
+    # if any(nx.get_edge_attributes(All_extended_patterns_2[chosen_pattern_ID]['pattern'], 'eventually').values()):
+    #     return None, None, None
+    print(chosen_pattern_ID)
+    for idx, case in enumerate(All_extended_patterns_2[chosen_pattern_ID]['Instances']['case']):
+        Trace_graph = EventLog_graphs[case].copy()
+        nodes_values = [Trace_graph._node[n]['value'] for n in Trace_graph.nodes]
+        embedded_trace_graph = All_extended_patterns_2[chosen_pattern_ID]['Instances']['emb_trace'][idx]
+        inside_pattern_nodes = set(Trace_graph.nodes).difference(set(embedded_trace_graph.nodes))
+        to_remove = set(Trace_graph.nodes).difference(inside_pattern_nodes)
+        chosen_pattern = Trace_graph.copy()
+        chosen_pattern.remove_nodes_from(to_remove)
+
+        ending_nodes = {n[0] for n in chosen_pattern.out_degree if n[1] == 0}
+        starting_nodes = {n[0] for n in chosen_pattern.in_degree if n[1] == 0}
+
+        case_data = selected_variants[selected_variants['case:concept:name'] == case]
+        values = nx.get_node_attributes(Trace_graph, 'value')
+        parallel = nx.get_node_attributes(Trace_graph, 'parallel')
+        color = nx.get_node_attributes(Trace_graph, 'color')
+
+        nm = iso.categorical_node_match("value", nodes_values)
+        em = iso.categorical_node_match("eventually", [True, False])
+
+        # preceding extension
+        in_pattern_nodes = set(embedded_trace_graph.pred['pattern'].keys())
+        if len(in_pattern_nodes) > 0:
+            extended_pattern = chosen_pattern.copy()
+            in_pattern_values = [values[n] for n in in_pattern_nodes]
+            for in_node in in_pattern_nodes:
+                extended_pattern.add_node(in_node,
+                                          value=values[in_node], parallel=parallel[in_node],
+                                          color=color[in_node])
+                for node in starting_nodes:
+                    extended_pattern.add_edge(in_node, node, eventually=False)
+
+            new_embedded_trace_graph = create_embedded_pattern_in_trace(set(extended_pattern.nodes),
+                                                                        Trace_graph)
+            Extended_patterns_at_stage, new_Pattern_IDs = update_pattern_dict(Extended_patterns_at_stage,
+                                                                              extended_pattern,
+                                                                              new_embedded_trace_graph,
+                                                                              case_data, 'case:concept:name', nm,
+                                                                              em,
+                                                                              chosen_pattern_ID,
+                                                                              new_patterns_for_core)
+            if new_Pattern_IDs != "":
+                new_patterns_for_core.append(new_Pattern_IDs)
+
+        # following extension
+        out_pattern_nodes = set(embedded_trace_graph.succ['pattern'].keys())
+        if len(out_pattern_nodes) > 0:
+            extended_pattern = chosen_pattern.copy()
+            out_pattern_values = [values[n] for n in out_pattern_nodes]
+            for out_node in out_pattern_nodes:
+                extended_pattern.add_node(out_node,
+                                          value=values[out_node], parallel=parallel[out_node],
+                                          color=color[out_node])
+                for node in ending_nodes:
+                    extended_pattern.add_edge(node, out_node, eventually=False)
+
+            new_embedded_trace_graph = create_embedded_pattern_in_trace(set(extended_pattern.nodes),
+                                                                        Trace_graph)
+            Extended_patterns_at_stage, new_Pattern_IDs = update_pattern_dict(Extended_patterns_at_stage,
+                                                                              extended_pattern,
+                                                                              new_embedded_trace_graph,
+                                                                              case_data, 'case:concept:name', nm,
+                                                                              em,
+                                                                              chosen_pattern_ID,
+                                                                              new_patterns_for_core)
+            if new_Pattern_IDs != "":
+                new_patterns_for_core.append(new_Pattern_IDs)
+
+        ## all non-direct nodes
+        Eventual_relations_nodes = set(embedded_trace_graph.nodes).difference(
+            in_pattern_nodes.union(out_pattern_nodes))
+        Eventual_relations_nodes.remove('pattern')
+
+        # Eventually following patterns
+        if len(out_pattern_nodes) > 0:
+            Eventual_following_nodes = {node for node in Eventual_relations_nodes if
+                                        node > max(out_pattern_nodes)}
+            for Ev_F_nodes in Eventual_following_nodes:
+                Eventual_follow_pattern = chosen_pattern.copy()
+                Eventual_follow_pattern.add_node(Ev_F_nodes,
+                                                 value=values[Ev_F_nodes], parallel=parallel[Ev_F_nodes],
+                                                 color=color[Ev_F_nodes])
+                for node in ending_nodes:
+                    Eventual_follow_pattern.add_edge(node, Ev_F_nodes, eventually=True)
+
+                Extended_patterns_at_stage, new_Pattern_IDs = update_pattern_dict(Extended_patterns_at_stage,
+                                                                                  Eventual_follow_pattern, [],
+                                                                                  case_data, 'case:concept:name',
+                                                                                  nm, em,
+                                                                                  chosen_pattern_ID,
+                                                                                  new_patterns_for_core)
+                if new_Pattern_IDs != "":
+                    new_patterns_for_core.append(new_Pattern_IDs)
+
+        # Eventually preceding patterns
+        if len(in_pattern_nodes) > 0:
+            Eventual_preceding_nodes = {node for node in Eventual_relations_nodes if
+                                        node < min(in_pattern_nodes)}
+            for Ev_P_nodes in Eventual_preceding_nodes:
+                Eventual_preceding_pattern = chosen_pattern.copy()
+                Eventual_preceding_pattern.add_node(Ev_P_nodes,
+                                                    value=values[Ev_P_nodes], parallel=parallel[Ev_P_nodes],
+                                                    color=color[Ev_P_nodes])
+                for node in starting_nodes:
+                    Eventual_preceding_pattern.add_edge(Ev_P_nodes, node, eventually=True)
+
+                Extended_patterns_at_stage, new_Pattern_IDs = update_pattern_dict(Extended_patterns_at_stage,
+                                                                                  Eventual_preceding_pattern, [],
+                                                                                  case_data, 'case:concept:name',
+                                                                                  nm, em,
+                                                                                  chosen_pattern_ID,
+                                                                                  new_patterns_for_core)
+                if new_Pattern_IDs != "":
+                    new_patterns_for_core.append(new_Pattern_IDs)
+
+        Extension_3_patterns.extend(new_patterns_for_core)
+        if len(new_patterns_for_core) > 0:
+
+            # Extended_patterns_at_stage[chosen_pattern_ID] = dict()
+            # Extended_patterns_at_stage[chosen_pattern_ID]['dict'] = Extended_pattern_dictionary
+            # Extended_patterns_at_stage[chosen_pattern_ID]['Egraph'] = EventLog_graphs
+            # Extended_patterns_at_stage[chosen_pattern_ID]['variants'] = selected_variants
+
+            patient_data[new_patterns_for_core] = 0
+            for PID in new_patterns_for_core:
+                for CaseID in np.unique(Extended_patterns_at_stage[PID]['Instances']['case']):
+                    variant_frequency_case = Extended_patterns_at_stage[PID]['Instances']['case'].count(CaseID)
+                    Other_cases = \
+                        selected_variants.loc[
+                            selected_variants['case:concept:name'] == CaseID, 'case:CaseIDs'].tolist()[
+                            0]
+                    for Ocase in Other_cases:
+                        patient_data.loc[
+                            patient_data['case:concept:name'] == Ocase, PID] = variant_frequency_case
+
+    return Extension_3_patterns, Extended_patterns_at_stage, patient_data

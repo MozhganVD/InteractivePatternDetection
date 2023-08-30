@@ -13,7 +13,7 @@ import argparse
 from sklearn.metrics import f1_score
 from sklearn.tree import DecisionTreeClassifier
 
-from tools import create_pattern_attributes_IKNL_auto, create_embedded_pattern_in_trace, \
+from tools import create_pattern_attributes_IKNL, create_embedded_pattern_in_trace, \
     Trace_graph_generator, update_pattern_dict, calculate_pairwise_case_distance, Pattern_Extender
 
 random.seed(123)
@@ -193,7 +193,7 @@ for fold in range(len(train_list)):
     train_patient_data = patient_data[patient_data[case_id].isin(train_list[fold + 1])]
     test_patient_data = patient_data[patient_data[case_id].isin(test_list[fold + 1])]
 
-    activity_attributes = create_pattern_attributes_IKNL_auto(train_patient_data, label_col, label_class,
+    activity_attributes = create_pattern_attributes_IKNL(train_patient_data, label_col, label_class,
                                                               False, list(main_data[activities].unique()),
                                                               pairwise_distances_array, pair_cases, start_search_points)
 
@@ -419,7 +419,7 @@ for fold in range(len(train_list)):
     train_patient_data = patient_data[patient_data[case_id].isin(train_list[fold + 1])]
     test_patient_data = patient_data[patient_data[case_id].isin(test_list[fold + 1])]
 
-    pattern_attributes = create_pattern_attributes_IKNL_auto(train_patient_data, label_col, label_class,
+    pattern_attributes = create_pattern_attributes_IKNL(train_patient_data, label_col, label_class,
                                                              False, All_extended_patterns_1_list,
                                                              pairwise_distances_array, pair_cases, start_search_points)
     Objectives_attributes = pattern_attributes[pareto_features]
@@ -475,7 +475,7 @@ print('1st extension is done!')
 for ext in range(1, extension_numbers):
     print("extension number %s " % (ext + 1))
     Extension_2_patterns_list, Extended_patterns_at_stage, patient_data = \
-        Pattern_Extender(Extended_patterns_at_stage, patient_data, EventLog_graphs, all_variants, Eventual_window)
+        Pattern_Extender(Extended_patterns_at_stage, patient_data, EventLog_graphs, all_variants)
 
     result_dict = {'K': [], 'N': [], 'Pareto': [], 'All': []}
     for obj in pareto_features:
@@ -485,7 +485,7 @@ for ext in range(1, extension_numbers):
         train_patient_data = patient_data[patient_data[case_id].isin(train_list[fold + 1])]
         test_patient_data = patient_data[patient_data[case_id].isin(test_list[fold + 1])]
 
-        pattern_attributes = create_pattern_attributes_IKNL_auto(train_patient_data, label_col, label_class,
+        pattern_attributes = create_pattern_attributes_IKNL(train_patient_data, label_col, label_class,
                                                                  False, Extension_2_patterns_list,
                                                                  pairwise_distances_array, pair_cases, start_search_points)
         Objectives_attributes = pattern_attributes[pareto_features]

@@ -811,7 +811,6 @@ def Pattern_Extender(All_extended_patterns_2, patient_data, EventLog_graphs, all
 
     return Extension_3_patterns, Extended_patterns_at_stage, patient_data
 
-
 def Classifiers_kFold_results(All_extended_patterns, patient_data, test_list, train_list, label_class):
     ML_model = DecisionTreeClassifier()
     result_dict = dict()
