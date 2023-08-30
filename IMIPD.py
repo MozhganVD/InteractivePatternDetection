@@ -484,7 +484,6 @@ def defining_graph_pos(G):
 
     return pos
 
-
 def Single_Pattern_Extender(chosen_pattern_ID, All_extended_patterns_2, patient_data, EventLog_graphs, all_variants):
     Extension_3_patterns = []
     Extended_patterns_at_stage = dict()
