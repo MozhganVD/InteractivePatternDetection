@@ -61,7 +61,6 @@ def similarity_measuring_patterns(patterns_data, patient_data, pair_cases, start
 
     return patterns_data
 
-
 def predictive_measuring_patterns(patterns_data, patient_data, label_class, Core_activity=None):
     # if Core_activity is not None:
     #     patient_data = patient_data[patient_data[Core_activity] != 0]
@@ -96,16 +95,30 @@ def predictive_measuring_patterns(patterns_data, patient_data, label_class, Core
     return patterns_data
 
 
+# def frequency_measuring_patterns(patterns_data, pattern_list, patient_data, Core_activity):
+#     for pattern in pattern_list:
+#         patterns_data.loc[patterns_data['patterns'] == pattern, 'Pattern_Frequency'] \
+#             = np.sum(patient_data[pattern])
+#
+#         patterns_data.loc[patterns_data['patterns'] == pattern, 'Case_Support'] = \
+#             np.count_nonzero(patient_data[pattern])
+#
+#         patterns_data.loc[patterns_data['patterns'] == pattern, 'Frequency_Interest'] = \
+#             np.count_nonzero(patient_data[pattern]) / len(patient_data)
+#
+#     return patterns_data
 def frequency_measuring_patterns(patterns_data, pattern_list, patient_data, Core_activity):
+    pattern_indices = patterns_data.set_index('patterns').index
     for pattern in pattern_list:
-        patterns_data.loc[patterns_data['patterns'] == pattern, 'Pattern_Frequency'] \
-            = np.sum(patient_data[pattern])
+        pattern_index = pattern_indices.get_loc(pattern)
 
-        patterns_data.loc[patterns_data['patterns'] == pattern, 'Case_Support'] = \
-            np.count_nonzero(patient_data[pattern])
+        pattern_occurrences = patient_data[pattern]
+        pattern_support = np.count_nonzero(pattern_occurrences)
+        pattern_frequency_interest = pattern_support / len(patient_data)
 
-        patterns_data.loc[patterns_data['patterns'] == pattern, 'Frequency_Interest'] = \
-            np.count_nonzero(patient_data[pattern]) / len(patient_data)
+        patterns_data.at[pattern_index, 'Pattern_Frequency'] = np.sum(pattern_occurrences)
+        patterns_data.at[pattern_index, 'Case_Support'] = pattern_support
+        patterns_data.at[pattern_index, 'Frequency_Interest'] = pattern_frequency_interest
 
     return patterns_data
 
@@ -124,13 +137,16 @@ def create_pattern_attributes(patient_data, label_class, Core_activity, pattern_
     patterns_data = create_pattern_frame(pattern_list)
     ## Frequency-based measures
     patterns_data = frequency_measuring_patterns(patterns_data, pattern_list, patient_data, Core_activity)
+    print('frequency measures done')
 
     ## Discriminative measures
     patterns_data = predictive_measuring_patterns(patterns_data, patient_data, label_class, Core_activity)
+    print('predictive measures done')
 
     ## Similarity measures
     patterns_data = similarity_measuring_patterns(patterns_data, patient_data, pair_cases, start_search_points,
                                                   pairwise_distances_array, Core_activity)
+    print('similarity measures done')
 
     return patterns_data
 

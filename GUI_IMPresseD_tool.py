@@ -87,6 +87,13 @@ class GUI_IMOPD_IKNL_tool:
         # unable the button until all comboboxes are filled
         self.save_setting_button.config(state="disabled")
 
+        # create a button for starting the detection
+        self.start_detection_button = tk.Button(self.master, text="Start Pattern Discovery",
+                                                command=self.start_detection)
+        self.interest_function_frame = tk.Frame(self.master)
+        self.interest_function_frame_2 = tk.Frame(self.interest_function_frame)
+        self.interest_function_frame_3 = tk.Frame(self.interest_function_frame)
+
     def select_file(self):
         # get file path for only csv files
         self.file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")],
@@ -102,11 +109,27 @@ class GUI_IMOPD_IKNL_tool:
             messagebox.showerror("Error", "Please select a csv file")
 
     def show_setting(self, df):
+        # clear combo boxes
+        self.case_id_combobox.set('')
+        self.activity_combobox.set('')
+        self.timestamp_combobox.set('')
+        self.outcome_combobox.set('')
+
+        # Clear all buttons and text widgets
+        self.start_detection_button.destroy()
+        self.interest_function_frame.destroy()
+        self.interest_function_frame_2.destroy()
+        self.interest_function_frame_3.destroy()
+
         # add column names to the comboboxes
         self.case_id_combobox.config(values=list(df.columns))
         self.activity_combobox.config(values=list(df.columns))
         self.timestamp_combobox.config(values=list(df.columns))
         self.outcome_combobox.config(values=list(df.columns))
+        # clear menu for numerical attributes
+        self.menu_num.delete(0, tk.END)
+        self.menu.delete(0, tk.END)
+
         self.choices = {}
         for choice in list(df.columns):
             self.choices[choice] = tk.IntVar(value=0)
@@ -137,15 +160,6 @@ class GUI_IMOPD_IKNL_tool:
             self.df[self.case_id] = self.df[self.case_id].astype(str)
             self.df[self.case_id] = self.df[self.case_id].astype(str)
 
-            # activities_freq = self.df.groupby(by=[self.activity])[self.case_id].count()
-            # activities_freq = set(activities_freq[activities_freq < 3].index.tolist())
-            # to_remove = []
-            # for case in self.df[self.case_id].unique():
-            #     trace = self.df.loc[self.df[self.case_id] == case, self.activity].tolist()
-            #     if len(set(trace).intersection(activities_freq)) != 0:
-            #         to_remove.append(case)
-            #
-            # self.df = self.df[~self.df[self.case_id].isin(to_remove)]
             color_codes = ["#" + ''.join([random.choice('000123456789ABCDEF') for i in range(6)])
                            for j in range(len(self.df[self.activity].unique()))]
 
@@ -169,7 +183,6 @@ class GUI_IMOPD_IKNL_tool:
             # create a button for starting the detection
             self.start_detection_button = tk.Button(self.master, text="Start Pattern Discovery",
                                                     command=self.start_detection)
-
             self.start_detection_button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
             # create a checkbox and combo box for three interest functions
@@ -225,7 +238,6 @@ class GUI_IMOPD_IKNL_tool:
             self.direction_combobox_3.pack(side=tk.RIGHT, padx=10, pady=10)
             self.direction_combobox_3.current(1)
 
-
         else:
             messagebox.showerror("Error", "You need to select case id, activity, timestamp and outcome!")
 
@@ -269,12 +281,12 @@ class GUI_IMOPD_IKNL_tool:
                                                                         " put in its name on the clipboard")
         self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
         # add tree widget for showing the results
-        self.tree = self.creat_table(self.table_result_frame)
+        tree = self.creat_table(self.table_result_frame)
         # create a new thread for running the detection
-        self.thread = threading.Thread(target=self.run_detection)
+        self.thread = threading.Thread(target=self.run_detection(tree))
         self.thread.start()
 
-    def run_detection(self):
+    def run_detection(self, tree):
         # create a progress bar at the bottom of the result window
         self.progress_bar.start(10)
 
@@ -382,7 +394,7 @@ class GUI_IMOPD_IKNL_tool:
         # update tree (tabel results) based on the values in pareto_activities
         for index, row in paretoset_activities.iterrows():
             # insert values into the treeview widget
-            self.tree.insert("", "end",
+            tree.insert("", "end",
                              values=(row['patterns'], row['Frequency_Interest'],
                                      row['Outcome_Interest'], row['Case_Distance_Interest']))
 
@@ -399,7 +411,7 @@ class GUI_IMOPD_IKNL_tool:
         tree.heading("Outcome_Interest", text="Outcome_Interest")
         tree.heading("Case_Distance_Interest", text="Case_Distance_Interest")
         tree.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        tree.bind("<Button-3>", self.copy_to_clipboard)
+        tree.bind("<Button-3>", lambda event, arg=tree: self.copy_to_clipboard(event, tree))
 
         # add vertical scrollbar for the tree widget
         tree_scrollbar = tk.Scrollbar(table_result_frame, orient=tk.VERTICAL)
@@ -426,7 +438,7 @@ class GUI_IMOPD_IKNL_tool:
         else:
             # create a new windows for the results of extension
             self.extension_window = tk.Toplevel(self.master)
-            self.extension_window.title("Extension Results")
+            self.extension_window.title("Extension Results: %s" % self.Core_activity)
             self.extension_window.geometry("1000x900")
             self.extension_window.resizable(False, False)
             self.extension_window.grab_set()
@@ -464,13 +476,13 @@ class GUI_IMOPD_IKNL_tool:
             self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
 
             # add tree widget for showing the results
-            self.tree = self.creat_table(table_result_frame)
+            tree = self.creat_table(table_result_frame)
 
             # create a new thread for running the detection
             self.progress_bar_2.start(10)
             # self.run_extension()
-            thread = threading.Thread(target=self.run_extension(self.tree))
-            thread.start()
+            self.thread_2 = threading.Thread(target=self.run_extension(tree))
+            self.thread_2.start()
 
     def run_extension(self, tree):
         self.all_pattern_dictionary = dict()
@@ -644,14 +656,14 @@ class GUI_IMOPD_IKNL_tool:
             canvas.draw()
             canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-    def copy_to_clipboard(self, event):
+    def copy_to_clipboard(self, event, tree):
         # get the selected row and column
-        region = self.tree.identify_region(event.x, event.y)
+        region = tree.identify_region(event.x, event.y)
         if region == "cell":
-            row, column = self.tree.identify_row(event.y), self.tree.identify_column(event.x)
+            row, column = tree.identify_row(event.y), tree.identify_column(event.x)
 
             # get the value of the selected cell
-            value = self.tree.item(row)['values'][0]
+            value = tree.item(row)['values'][0]
 
             # put the value on the clipboard
             pyperclip.copy(value)
@@ -677,7 +689,7 @@ class GUI_IMOPD_IKNL_tool:
         else:
             # create a new windows for the results of extension
             self.extension_window = tk.Toplevel(self.master)
-            self.extension_window.title("Extension Results")
+            self.extension_window.title("Extension Results: %s" % self.Core_activity)
             self.extension_window.geometry("1000x900")
             self.extension_window.resizable(False, False)
             self.extension_window.grab_set()
@@ -715,11 +727,11 @@ class GUI_IMOPD_IKNL_tool:
             self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
 
             # add tree widget for showing the results
-            self.tree = self.creat_table(table_result_frame)
+            tree = self.creat_table(table_result_frame)
 
             # create a new thread for running the detection
             self.progress_bar_2.start(10)
-            thread = threading.Thread(target=self.run_pattern_extension(self.tree))
+            thread = threading.Thread(target=self.run_pattern_extension(tree))
             thread.start()
 
     def run_pattern_extension(self, tree):
