@@ -190,15 +190,15 @@ class GUI_IMOPD_IKNL_tool:
             # create a checkbox and combo box for three interest functions
             self.interest_function_frame = tk.Frame(self.master)
             self.interest_function_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
-            # self.correlation_function = tk.IntVar()
+            self.correlation_function = tk.IntVar()
             # set a text box for the correlation function
-            self.interest_function_label_1 = tk.Label(self.interest_function_frame,
-                                                        text="Correlation interest function")
-            self.interest_function_label_1.pack(side=tk.LEFT, padx=10, pady=10)
-            # self.interest_function_checkbox_1 = tk.Checkbutton(self.interest_function_frame,
-            #                                                    text="Correlation interest function",
-            #                                                    variable=self.correlation_function)
-            # self.interest_function_checkbox_1.pack(side=tk.LEFT, padx=10, pady=10)
+            # self.interest_function_label_1 = tk.Label(self.interest_function_frame,
+            #                                             text="Correlation interest function")
+            # self.interest_function_label_1.pack(side=tk.LEFT, padx=10, pady=10)
+            self.interest_function_checkbox_1 = tk.Checkbutton(self.interest_function_frame,
+                                                               text="Correlation interest function",
+                                                               variable=self.correlation_function)
+            self.interest_function_checkbox_1.pack(side=tk.LEFT, padx=10, pady=10)
             self.direction_correlation_function = tk.StringVar()
             self.direction_combobox_1 = ttk.Combobox(self.interest_function_frame,
                                                      textvariable=self.direction_correlation_function, state="readonly")
@@ -208,14 +208,14 @@ class GUI_IMOPD_IKNL_tool:
 
             self.interest_function_frame_2 = tk.Frame(self.master)
             self.interest_function_frame_2.pack(side=tk.BOTTOM, padx=10, pady=10)
-            # self.frequency_function = tk.IntVar()
-            self.interest_function_label_2 = tk.Label(self.interest_function_frame_2,
-                                                        text="Frequency interest function")
-            self.interest_function_label_2.pack(side=tk.LEFT, padx=10, pady=10)
-            # self.interest_function_checkbox_2 = tk.Checkbutton(self.interest_function_frame_2,
-            #                                                    text="Frequency interest function",
-            #                                                    variable=self.frequency_function)
-            # self.interest_function_checkbox_2.pack(side=tk.LEFT, padx=10, pady=10)
+            self.frequency_function = tk.IntVar()
+            # self.interest_function_label_2 = tk.Label(self.interest_function_frame_2,
+            #                                             text="Frequency interest function")
+            # self.interest_function_label_2.pack(side=tk.LEFT, padx=10, pady=10)
+            self.interest_function_checkbox_2 = tk.Checkbutton(self.interest_function_frame_2,
+                                                               text="Frequency interest function",
+                                                               variable=self.frequency_function)
+            self.interest_function_checkbox_2.pack(side=tk.LEFT, padx=10, pady=10)
             self.direction_frequency_function = tk.StringVar()
             self.direction_combobox_2 = ttk.Combobox(self.interest_function_frame_2,
                                                      textvariable=self.direction_frequency_function, state="readonly")
@@ -225,14 +225,14 @@ class GUI_IMOPD_IKNL_tool:
 
             self.interest_function_frame_3 = tk.Frame(self.master)
             self.interest_function_frame_3.pack(side=tk.BOTTOM, padx=10, pady=10)
-            # self.distance_function = tk.IntVar()
-            self.interest_function_label_3 = tk.Label(self.interest_function_frame_3,
-                                                        text="Case Distance interest function")
-            self.interest_function_label_3.pack(side=tk.LEFT, padx=10, pady=10)
-            # self.interest_function_checkbox_3 = tk.Checkbutton(self.interest_function_frame_3,
-            #                                                    text="Case Distance interest function",
-            #                                                    variable=self.distance_function)
-            # self.interest_function_checkbox_3.pack(side=tk.LEFT, padx=10, pady=10)
+            self.distance_function = tk.IntVar()
+            # self.interest_function_label_3 = tk.Label(self.interest_function_frame_3,
+            #                                             text="Case Distance interest function")
+            # self.interest_function_label_3.pack(side=tk.LEFT, padx=10, pady=10)
+            self.interest_function_checkbox_3 = tk.Checkbutton(self.interest_function_frame_3,
+                                                               text="Case Distance interest function",
+                                                               variable=self.distance_function)
+            self.interest_function_checkbox_3.pack(side=tk.LEFT, padx=10, pady=10)
             self.direction_distance_function = tk.StringVar()
             self.direction_combobox_3 = ttk.Combobox(self.interest_function_frame_3,
                                                      textvariable=self.direction_distance_function, state="readonly")
@@ -344,25 +344,24 @@ class GUI_IMOPD_IKNL_tool:
             self.start_search_points.append(k * case_size - (i + k))
             i += k
 
+        self.visualization = ['Outcome_Interest', 'Frequency_Interest', 'Case_Distance_Interest']
+        # check if the checkbox for interest function is checked
+        self.pareto_features = []
+        self.pareto_sense = []
+        if self.correlation_function.get():
+            self.pareto_features.append('Outcome_Interest')
+            self.pareto_sense.append(self.direction_correlation_function.get())
+        if self.frequency_function.get():
+            self.pareto_features.append('Frequency_Interest')
+            self.pareto_sense.append(self.direction_frequency_function.get())
+        if self.distance_function.get():
+            self.pareto_features.append('Case_Distance_Interest')
+            self.pareto_sense.append(self.direction_distance_function.get())
+
         activity_attributes = create_pattern_attributes(self.patient_data, self.outcome, None,
                                                         list(self.df[self.activity].unique()),
                                                         self.pairwise_distances_array, self.pair_cases,
                                                         self.start_search_points)
-
-        self.pareto_features = ['Outcome_Interest', 'Frequency_Interest', 'Case_Distance_Interest']
-        self.pareto_sense = [self.direction_correlation_function.get(),
-                             self.direction_frequency_function.get(),
-                             self.direction_distance_function.get()]
-        # check if the checkbox for interest function is checked
-        # if self.correlation_function.get():
-        #     self.pareto_features.append('Outcome_Interest')
-        #     self.pareto_sense.append(self.direction_correlation_function.get())
-        # if self.frequency_function.get():
-        #     self.pareto_features.append('Frequency_Interest')
-        #     self.pareto_sense.append(self.direction_frequency_function.get())
-        # if self.distance_function.get():
-        #     self.pareto_features.append('Case_Distance_Interest')
-        #     self.pareto_sense.append(self.direction_distance_function.get())
 
         Objectives_attributes = activity_attributes[self.pareto_features]
         if 'Outcome_Correlation' in self.pareto_features:
@@ -372,13 +371,13 @@ class GUI_IMOPD_IKNL_tool:
         paretoset_activities = activity_attributes[mask]
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.set_xlabel(self.pareto_features[0])
-        ax.set_ylabel(self.pareto_features[1])
-        ax.set_zlabel(self.pareto_features[2])
+        ax.set_xlabel(self.visualization[0])
+        ax.set_ylabel(self.visualization[1])
+        ax.set_zlabel(self.visualization[2])
         for ticker, row in paretoset_activities.iterrows():
-            ax.scatter(row[self.pareto_features[0]], row[self.pareto_features[1]], row[self.pareto_features[2]],
+            ax.scatter(row[self.visualization[0]], row[self.visualization[1]], row[self.visualization[2]],
                        c=self.color_act_dict[row['patterns']])
-            ax.text(row[self.pareto_features[0]], row[self.pareto_features[1]], row[self.pareto_features[2]],
+            ax.text(row[self.visualization[0]], row[self.visualization[1]], row[self.visualization[2]],
                     row['patterns'])
 
         # make progress bar invisible
@@ -560,12 +559,12 @@ class GUI_IMOPD_IKNL_tool:
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.set_xlabel(self.pareto_features[0])
-        ax.set_ylabel(self.pareto_features[1])
-        ax.set_zlabel(self.pareto_features[2])
+        ax.set_xlabel(self.visualization[0])
+        ax.set_ylabel(self.visualization[1])
+        ax.set_zlabel(self.visualization[2])
         for ticker, row in paretoset_patterns.iterrows():
-            ax.scatter(row[self.pareto_features[0]], row[self.pareto_features[1]], row[self.pareto_features[2]])
-            ax.text(row[self.pareto_features[0]], row[self.pareto_features[1]], row[self.pareto_features[2]],
+            ax.scatter(row[self.visualization[0]], row[self.visualization[1]], row[self.visualization[2]])
+            ax.text(row[self.visualization[0]], row[self.visualization[1]], row[self.visualization[2]],
                     row['patterns'])
 
         self.progress_bar_2.stop()
@@ -762,12 +761,12 @@ class GUI_IMOPD_IKNL_tool:
         # plot the results on the canvas
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.set_xlabel(self.pareto_features[0])
-        ax.set_ylabel(self.pareto_features[1])
-        ax.set_zlabel(self.pareto_features[2])
+        ax.set_xlabel(self.visualization[0])
+        ax.set_ylabel(self.visualization[1])
+        ax.set_zlabel(self.visualization[2])
         for ticker, row in paretoset_patterns.iterrows():
-            ax.scatter(row[self.pareto_features[0]], row[self.pareto_features[1]], row[self.pareto_features[2]])
-            ax.text(row[self.pareto_features[0]], row[self.pareto_features[1]], row[self.pareto_features[2]],
+            ax.scatter(row[self.visualization[0]], row[self.visualization[1]], row[self.visualization[2]])
+            ax.text(row[self.visualization[0]], row[self.visualization[1]], row[self.visualization[2]],
                     row['patterns'])
 
         self.progress_bar_2.stop()
