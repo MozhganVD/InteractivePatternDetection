@@ -146,6 +146,8 @@ class GUI_IMOPD_IKNL_tool:
         self.save_setting_button.config(state="normal")
 
     def save_setting(self):
+        # create a dictionary for saving all the extended patterns
+        self.all_extended_patterns = dict()
         # get the selected values from the comboboxes
         self.case_id = self.case_id_combobox.get()
         self.activity = self.activity_combobox.get()
@@ -423,28 +425,28 @@ class GUI_IMOPD_IKNL_tool:
 
     def extension(self):
         # get the input from the user
-        self.Core_activity = self.text_holder.get("1.0", tk.END)
-        self.Core_activity = self.Core_activity[:-1]
+        Core_activity = self.text_holder.get("1.0", tk.END)
+        Core_activity = Core_activity[:-1]
 
         # check if the input is not empty
-        if self.Core_activity == "":
+        if Core_activity == "":
             messagebox.showerror("Error", "Please enter a foundational pattern for extension!")
 
         # check if the input is not empty
-        elif self.Core_activity not in self.df[self.activity].unique():
+        elif Core_activity not in self.df[self.activity].unique():
             messagebox.showerror("Error", "Selected pattern is not valid!")
 
         # if the input is valid
         else:
             # create a new windows for the results of extension
-            self.extension_window = tk.Toplevel(self.master)
-            self.extension_window.title("Extension Results: %s" % self.Core_activity)
-            self.extension_window.geometry("1000x900")
-            self.extension_window.resizable(False, False)
-            self.extension_window.grab_set()
-            self.extension_window.focus_set()
+            extension_window = tk.Toplevel(self.master)
+            extension_window.title("Extension Results: %s" % Core_activity)
+            extension_window.geometry("1000x900")
+            extension_window.resizable(False, False)
+            extension_window.grab_set()
+            extension_window.focus_set()
             # add multiple tab for showing the results
-            self.tab_control = ttk.Notebook(self.extension_window)
+            self.tab_control = ttk.Notebook(extension_window)
             self.tab_control.pack(expand=1, fill="both")
             # add a tab for showing the results of extension
             self.tab1 = ttk.Frame(self.tab_control)
@@ -455,11 +457,12 @@ class GUI_IMOPD_IKNL_tool:
             self.progress_bar_2.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
             # add text holder for recieving input from user
-            self.text_holder_2 = tk.Text(self.tab1, height=1, width=50)
-            self.text_holder_2.pack(side=tk.TOP, padx=10, pady=10)
+            text_holder = tk.Text(self.tab1, height=1, width=50)
+            text_holder.pack(side=tk.TOP, padx=10, pady=10)
 
             # add button for getting input from user
-            self.get_input_button = tk.Button(self.tab1, text="Pattern Extension", command=self.extension_more)
+            self.get_input_button = tk.Button(self.tab1, text="Pattern Extension",
+                                              command=lambda: self.extension_more(text_holder))
             self.get_input_button.pack(side=tk.TOP, padx=10, pady=10)
 
             # # show results on canvas
@@ -481,16 +484,16 @@ class GUI_IMOPD_IKNL_tool:
             # create a new thread for running the detection
             self.progress_bar_2.start(10)
             # self.run_extension()
-            self.thread_2 = threading.Thread(target=self.run_extension(tree))
+            self.thread_2 = threading.Thread(target=self.run_extension(tree, Core_activity))
             self.thread_2.start()
 
-    def run_extension(self, tree):
+    def run_extension(self, tree, Core_activity):
         self.all_pattern_dictionary = dict()
         self.All_Pareto_front = dict()
         self.EventLog_graphs = dict()
         self.Patterns_Dictionary = dict()
         self.all_variants = dict()
-        filtered_cases = self.df.loc[self.df[self.activity] == self.Core_activity, self.case_id]
+        filtered_cases = self.df.loc[self.df[self.activity] == Core_activity, self.case_id]
         filtered_main_data = self.df[self.df[self.case_id].isin(filtered_cases)]
         # Keep only variants and its frequency
         timestamp = self.timestamp
@@ -512,12 +515,12 @@ class GUI_IMOPD_IKNL_tool:
             pp_log.append(variants[k][0])
 
         selected_variants = pm4py.convert_to_dataframe(pp_log)
-        self.all_variants[self.Core_activity] = selected_variants
+        self.all_variants[Core_activity] = selected_variants
         timestamp = 'time:timestamp'
         for case in selected_variants[self.case_id].unique():
             case_data = selected_variants[selected_variants[self.case_id] == case]
             if case not in self.EventLog_graphs.keys():
-                Trace_graph = Trace_graph_generator(selected_variants, self.patient_data, self.Core_activity, 1,
+                Trace_graph = Trace_graph_generator(selected_variants, self.patient_data, Core_activity, 1,
                                                     case, self.color_act_dict,
                                                     self.case_id, self.activity, timestamp)
 
@@ -525,7 +528,7 @@ class GUI_IMOPD_IKNL_tool:
             else:
                 Trace_graph = self.EventLog_graphs[case].copy()
 
-            self.Patterns_Dictionary = Pattern_extension(case_data, Trace_graph, self.Core_activity,
+            self.Patterns_Dictionary = Pattern_extension(case_data, Trace_graph, Core_activity,
                                                          self.case_id, self.Patterns_Dictionary)
 
         self.patient_data[list(self.Patterns_Dictionary.keys())] = 0
@@ -539,7 +542,7 @@ class GUI_IMOPD_IKNL_tool:
                     self.patient_data.loc[self.patient_data[self.case_id] == Ocase, PID] = variant_frequency_case
 
         pattern_attributes = create_pattern_attributes(self.patient_data, self.outcome,
-                                                       self.Core_activity, list(self.Patterns_Dictionary.keys()),
+                                                       Core_activity, list(self.Patterns_Dictionary.keys()),
                                                        self.pairwise_distances_array, self.pair_cases,
                                                        self.start_search_points)
 
@@ -550,9 +553,9 @@ class GUI_IMOPD_IKNL_tool:
         mask = paretoset(Objectives_attributes, sense=self.pareto_sense)
         paretoset_patterns = pattern_attributes[mask]
 
-        self.All_Pareto_front[self.Core_activity] = dict()
-        self.All_Pareto_front[self.Core_activity]['dict'] = self.Patterns_Dictionary
-        self.All_Pareto_front[self.Core_activity]['variants'] = selected_variants
+        self.All_Pareto_front[Core_activity] = dict()
+        self.All_Pareto_front[Core_activity]['dict'] = self.Patterns_Dictionary
+        self.All_Pareto_front[Core_activity]['variants'] = selected_variants
         self.all_pattern_dictionary.update(self.Patterns_Dictionary)
 
         fig = plt.figure()
@@ -593,7 +596,7 @@ class GUI_IMOPD_IKNL_tool:
 
             # plot the distribution of numerical attributes for the pattern
             for ii, num in enumerate(self.numerical_attributes):
-                # patient_data_core = self.patient_data[self.patient_data[self.Core_activity] != 0]
+                # patient_data_core = self.patient_data[self.patient_data[Core_activity] != 0]
                 sb.distplot(self.patient_data.loc[self.patient_data[tab_name] == 0, num], ax=ax[0, ii + 1], color="g")
                 sb.distplot(self.patient_data.loc[self.patient_data[tab_name] > 0, num], ax=ax[0, ii + 1], color="r")
                 ax[0, ii + 1].set_title(num)
@@ -670,32 +673,33 @@ class GUI_IMOPD_IKNL_tool:
             # show a message to the user
             messagebox.showinfo("Copied", "%s been copied to the clipboard" % value)
 
-    def extension_more(self):
+    def extension_more(self, text_holder):
         # get the input from the user
-        self.Core_pattern = self.text_holder_2.get("1.0", tk.END)
-        self.Core_pattern = self.Core_pattern[:-1]
+        Core_pattern = text_holder.get("1.0", tk.END)
+        Core_pattern = Core_pattern[:-1]
+        self.all_extended_patterns.update(self.Patterns_Dictionary)
 
         # check if the input is not empty
-        if self.Core_pattern == "":
+        if Core_pattern == "":
             messagebox.showerror("Error", "Please enter a foundational pattern for extension!")
 
         # check if the input is not empty
-        elif self.Core_pattern not in self.Patterns_Dictionary.keys():
+        elif Core_pattern not in self.all_extended_patterns.keys():
             messagebox.showerror("Error", "Selected pattern is not valid!")
 
-        elif any(nx.get_edge_attributes(self.Patterns_Dictionary[self.Core_pattern]['pattern'], 'eventually').values()):
+        elif any(nx.get_edge_attributes(self.all_extended_patterns[Core_pattern]['pattern'], 'eventually').values()):
             messagebox.showerror("Error", "Patterns including eventually relations are not supported yet for extension")
         # if the input is valid
         else:
             # create a new windows for the results of extension
-            self.extension_window = tk.Toplevel(self.master)
-            self.extension_window.title("Extension Results: %s" % self.Core_activity)
-            self.extension_window.geometry("1000x900")
-            self.extension_window.resizable(False, False)
-            self.extension_window.grab_set()
-            self.extension_window.focus_set()
+            extension_window = tk.Toplevel(self.master)
+            extension_window.title("Extension Results: %s" % Core_pattern)
+            extension_window.geometry("1000x900")
+            extension_window.resizable(False, False)
+            extension_window.grab_set()
+            extension_window.focus_set()
             # add multiple tab for showing the results
-            self.tab_control = ttk.Notebook(self.extension_window)
+            self.tab_control = ttk.Notebook(extension_window)
             self.tab_control.pack(expand=1, fill="both")
             # add a tab for showing the results of extension
             self.tab1 = ttk.Frame(self.tab_control)
@@ -706,11 +710,12 @@ class GUI_IMOPD_IKNL_tool:
             self.progress_bar_2.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
             # add text holder for recieving input from user
-            self.text_holder_2 = tk.Text(self.tab1, height=1, width=50)
-            self.text_holder_2.pack(side=tk.TOP, padx=10, pady=10)
+            text_holder = tk.Text(self.tab1, height=1, width=50)
+            text_holder.pack(side=tk.TOP, padx=10, pady=10)
 
             # add button for getting input from user
-            self.get_input_button = tk.Button(self.tab1, text="Pattern Extension", command=self.extension_more)
+            self.get_input_button = tk.Button(self.tab1, text="Pattern Extension",
+                                              command=lambda: self.extension_more(text_holder))
             self.get_input_button.pack(side=tk.TOP, padx=10, pady=10)
 
             # # show results on canvas
@@ -731,13 +736,13 @@ class GUI_IMOPD_IKNL_tool:
 
             # create a new thread for running the detection
             self.progress_bar_2.start(10)
-            thread = threading.Thread(target=self.run_pattern_extension(tree))
+            thread = threading.Thread(target=self.run_pattern_extension(tree, Core_pattern))
             thread.start()
 
-    def run_pattern_extension(self, tree):
-        Extension_2_patterns_list, self.Patterns_Dictionary, self.patient_data = Single_Pattern_Extender(
-            self.Core_pattern,
-            self.Patterns_Dictionary,
+    def run_pattern_extension(self, tree, Core_pattern):
+        self.all_extended_patterns, self.Patterns_Dictionary, self.patient_data = Single_Pattern_Extender(
+            self.all_extended_patterns,
+            Core_pattern,
             self.patient_data, self.EventLog_graphs,
             self.all_variants)
 
@@ -745,7 +750,7 @@ class GUI_IMOPD_IKNL_tool:
         for obj in self.pareto_features:
             result_dict[obj] = []
         pattern_attributes = create_pattern_attributes(self.patient_data, self.outcome,
-                                                       self.Core_pattern, list(self.Patterns_Dictionary.keys()),
+                                                       Core_pattern, list(self.Patterns_Dictionary.keys()),
                                                        self.pairwise_distances_array, self.pair_cases,
                                                        self.start_search_points)
         Objectives_attributes = pattern_attributes[self.pareto_features]
@@ -792,7 +797,7 @@ class GUI_IMOPD_IKNL_tool:
 
             # plot the distribution of numerical attributes for the pattern
             for ii, num in enumerate(self.numerical_attributes):
-                # patient_data_core = self.patient_data[self.patient_data[self.Core_activity] != 0]
+                # patient_data_core = self.patient_data[self.patient_data[Core_activity] != 0]
                 sb.distplot(self.patient_data.loc[self.patient_data[tab_name] == 0, num], ax=ax[0, ii + 1], color="g")
                 sb.distplot(self.patient_data.loc[self.patient_data[tab_name] > 0, num], ax=ax[0, ii + 1], color="r")
                 ax[0, ii + 1].set_title(num)

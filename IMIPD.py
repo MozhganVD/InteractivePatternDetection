@@ -12,8 +12,8 @@ from sklearn.feature_selection import mutual_info_classif
 from sklearn.preprocessing import LabelEncoder
 from tools import create_embedded_pattern_in_trace, update_pattern_dict
 
-def VariantSelection(main_data, case_id, activities, timestamp):
 
+def VariantSelection(main_data, case_id, activities, timestamp):
     filtered_main_data = pm4py.format_dataframe(main_data, case_id=case_id, activity_key=activities,
                                                 timestamp_key=timestamp)
 
@@ -60,6 +60,7 @@ def similarity_measuring_patterns(patterns_data, patient_data, pair_cases, start
             np.mean([pairwise_distances_array[ind] for ind in selected_pair_index])
 
     return patterns_data
+
 
 def predictive_measuring_patterns(patterns_data, patient_data, label_class, Core_activity=None):
     # if Core_activity is not None:
@@ -132,8 +133,7 @@ def create_pattern_frame(pattern_list):
 
 
 def create_pattern_attributes(patient_data, label_class, Core_activity, pattern_list,
-                                   pairwise_distances_array, pair_cases, start_search_points):
-
+                              pairwise_distances_array, pair_cases, start_search_points):
     patterns_data = create_pattern_frame(pattern_list)
     ## Frequency-based measures
     patterns_data = frequency_measuring_patterns(patterns_data, pattern_list, patient_data, Core_activity)
@@ -173,7 +173,6 @@ def calculate_pairwise_case_distance(X_features, num_col):
         del x
         numeric_dist = numeric_dist.reshape(len(numeric_dist))
 
-
     if Cat_exists and Num_exists:
         Combined_dist = ((len(cat_col) * cat_dist) + numeric_dist) / (1 + len(cat_col))
         return Combined_dist
@@ -187,9 +186,7 @@ def calculate_pairwise_case_distance(X_features, num_col):
 
 def Pattern_extension(case_data, Trace_graph, Core_activity, case_id, Patterns_Dictionary,
                       Direct_predecessor=True, Direct_successor=True,
-                      Direct_context=True,Concurrence=True):
-
-
+                      Direct_context=True, Concurrence=True):
     all_nodes = set(Trace_graph.nodes)
     nodes_values = [Trace_graph._node[n]['value'] for n in Trace_graph.nodes]
     nm = iso.categorical_node_match("value", nodes_values)
@@ -358,7 +355,7 @@ def plot_patterns(Patterns_Dictionary, pattern_id, color_act_dict, pattern_attri
     # ax = fig.add_subplot()
 
     pattern_features = pattern_attributes[pattern_attributes['patterns'] == pattern_id]
-    info_text = ""
+    info_text = "pattern:" + str(pattern_id) + "\n\n"
     for col in pattern_features:
         if col == 'patterns':
             continue
@@ -493,8 +490,10 @@ def defining_graph_pos(G):
 
     return pos
 
-def Single_Pattern_Extender(chosen_pattern_ID, All_extended_patterns_2, patient_data, EventLog_graphs, all_variants):
-    Extension_3_patterns = []
+
+def Single_Pattern_Extender(all_extension_list, chosen_pattern_ID,
+                            patient_data, EventLog_graphs, all_variants):
+    # Extension_3_patterns = []
     Extended_patterns_at_stage = dict()
     # for chosen_pattern_ID in All_extended_patterns_2:
     new_patterns_for_core = []
@@ -504,10 +503,10 @@ def Single_Pattern_Extender(chosen_pattern_ID, All_extended_patterns_2, patient_
     # if any(nx.get_edge_attributes(All_extended_patterns_2[chosen_pattern_ID]['pattern'], 'eventually').values()):
     #     return None, None, None
     print(chosen_pattern_ID)
-    for idx, case in enumerate(All_extended_patterns_2[chosen_pattern_ID]['Instances']['case']):
+    for idx, case in enumerate(all_extension_list[chosen_pattern_ID]['Instances']['case']):
         Trace_graph = EventLog_graphs[case].copy()
         nodes_values = [Trace_graph._node[n]['value'] for n in Trace_graph.nodes]
-        embedded_trace_graph = All_extended_patterns_2[chosen_pattern_ID]['Instances']['emb_trace'][idx]
+        embedded_trace_graph = all_extension_list[chosen_pattern_ID]['Instances']['emb_trace'][idx]
         inside_pattern_nodes = set(Trace_graph.nodes).difference(set(embedded_trace_graph.nodes))
         to_remove = set(Trace_graph.nodes).difference(inside_pattern_nodes)
         chosen_pattern = Trace_graph.copy()
@@ -619,7 +618,7 @@ def Single_Pattern_Extender(chosen_pattern_ID, All_extended_patterns_2, patient_
                 if new_Pattern_IDs != "":
                     new_patterns_for_core.append(new_Pattern_IDs)
 
-        Extension_3_patterns.extend(new_patterns_for_core)
+        # Extension_3_patterns.extend(new_patterns_for_core)
         if len(new_patterns_for_core) > 0:
 
             # Extended_patterns_at_stage[chosen_pattern_ID] = dict()
@@ -639,4 +638,5 @@ def Single_Pattern_Extender(chosen_pattern_ID, All_extended_patterns_2, patient_
                         patient_data.loc[
                             patient_data['case:concept:name'] == Ocase, PID] = variant_frequency_case
 
-    return Extension_3_patterns, Extended_patterns_at_stage, patient_data
+    all_extension_list.update(Extended_patterns_at_stage)
+    return all_extension_list, Extended_patterns_at_stage, patient_data
