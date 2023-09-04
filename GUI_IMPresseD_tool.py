@@ -88,8 +88,10 @@ class GUI_IMOPD_IKNL_tool:
         self.save_setting_button.config(state="disabled")
 
         # create a button for starting the detection
-        self.start_detection_button = tk.Button(self.master, text="Start Pattern Discovery",
+        self.start_detection_button = tk.Button(self.master, text="Interactive Pattern Discovery",
                                                 command=self.start_detection)
+        self.auto_detection_button = tk.Button(self.master, text="Automatic Pattern Discovery",
+                                               command=self.Automatic_detection)
         self.interest_function_frame = tk.Frame(self.master)
         self.interest_function_frame_2 = tk.Frame(self.interest_function_frame)
         self.interest_function_frame_3 = tk.Frame(self.interest_function_frame)
@@ -117,6 +119,7 @@ class GUI_IMOPD_IKNL_tool:
 
         # Clear all buttons and text widgets
         self.start_detection_button.destroy()
+        self.auto_detection_button.destroy()
         self.interest_function_frame.destroy()
         self.interest_function_frame_2.destroy()
         self.interest_function_frame_3.destroy()
@@ -183,7 +186,11 @@ class GUI_IMOPD_IKNL_tool:
                     self.numerical_attributes.append(name)
 
             # create a button for starting the detection
-            self.start_detection_button = tk.Button(self.master, text="Start Pattern Discovery",
+            self.auto_detection_button = tk.Button(self.master, text="Automatic Pattern Discovery",
+                                                   command=self.Automatic_detection)
+            self.auto_detection_button.pack(side=tk.BOTTOM, padx=10, pady=10)
+
+            self.start_detection_button = tk.Button(self.master, text="Interactive Pattern Discovery",
                                                     command=self.start_detection)
             self.start_detection_button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
@@ -244,49 +251,55 @@ class GUI_IMOPD_IKNL_tool:
             messagebox.showerror("Error", "You need to select case id, activity, timestamp and outcome!")
 
     def start_detection(self):
-        # create a new window for showing the results
-        self.result_window = tk.Toplevel(self.master)
-        self.result_window.title("Results")
-        self.result_window.geometry("1000x900")
-        self.result_window.resizable(False, False)
-        self.result_window.grab_set()
-        self.result_window.focus_set()
-        self.result_window.transient(self.master)
+        if self.correlation_function.get() == 0 and \
+                self.frequency_function.get() == 0 and \
+                self.distance_function.get() == 0:
+            messagebox.showerror("Error", "You need to select at least one interest function!")
+        else:
+            # create a new window for showing the results
+            self.result_window = tk.Toplevel(self.master)
+            self.result_window.title("Results")
+            self.result_window.geometry("1000x900")
+            self.result_window.resizable(False, False)
+            self.result_window.grab_set()
+            self.result_window.focus_set()
+            self.result_window.transient(self.master)
 
-        self.progress_bar = ttk.Progressbar(self.result_window, orient=tk.HORIZONTAL, length=900, mode='indeterminate')
-        self.progress_bar.pack(side=tk.TOP, padx=10, pady=10)
+            self.progress_bar = ttk.Progressbar(self.result_window, orient=tk.HORIZONTAL, length=900,
+                                                mode='indeterminate')
+            self.progress_bar.pack(side=tk.TOP, padx=10, pady=10)
 
-        # add text holder for recieving input from user
-        self.text_holder = tk.Text(self.result_window, height=1, width=50)
-        self.text_holder.pack(side=tk.TOP, padx=10, pady=10)
+            # add text holder for recieving input from user
+            self.text_holder = tk.Text(self.result_window, height=1, width=50)
+            self.text_holder.pack(side=tk.TOP, padx=10, pady=10)
 
-        # add button for getting input from user
-        self.get_input_button = tk.Button(self.result_window, text="Pattern Extension", command=self.extension)
-        self.get_input_button.pack(side=tk.TOP, padx=10, pady=10)
+            # add button for getting input from user
+            self.get_input_button = tk.Button(self.result_window, text="Pattern Extension", command=self.extension)
+            self.get_input_button.pack(side=tk.TOP, padx=10, pady=10)
 
-        # create a frame for showing the results
-        self.result_frame = tk.Frame(self.result_window)
-        self.result_frame.pack(side=tk.TOP)
-        # create a picture canvas for showing the results
-        self.result_canvas = tk.Canvas(self.result_frame)
-        self.result_canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        # check if any categorical and numerical attributes are selected
-        if len(self.categorical_attributes) > 0:
-            self.with_categorical = True
-        if len(self.numerical_attributes) > 0:
-            self.with_numerical = True
-        # add a frame for showing the more results beside canvas
-        self.table_result_frame = tk.Frame(self.result_window)
-        self.table_result_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        # add a message on top the table
-        self.table_result_text = tk.Label(self.table_result_frame, text="Right click on your desired pattern to"
-                                                                        " put in its name on the clipboard")
-        self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
-        # add tree widget for showing the results
-        tree = self.creat_table(self.table_result_frame)
-        # create a new thread for running the detection
-        self.thread = threading.Thread(target=self.run_detection(tree))
-        self.thread.start()
+            # create a frame for showing the results
+            self.result_frame = tk.Frame(self.result_window)
+            self.result_frame.pack(side=tk.TOP)
+            # create a picture canvas for showing the results
+            self.result_canvas = tk.Canvas(self.result_frame)
+            self.result_canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            # check if any categorical and numerical attributes are selected
+            if len(self.categorical_attributes) > 0:
+                self.with_categorical = True
+            if len(self.numerical_attributes) > 0:
+                self.with_numerical = True
+            # add a frame for showing the more results beside canvas
+            self.table_result_frame = tk.Frame(self.result_window)
+            self.table_result_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            # add a message on top the table
+            self.table_result_text = tk.Label(self.table_result_frame, text="Right click on your desired pattern to"
+                                                                            " put in its name on the clipboard")
+            self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
+            # add tree widget for showing the results
+            tree = self.creat_table(self.table_result_frame)
+            # create a new thread for running the detection
+            self.thread = threading.Thread(target=self.run_detection(tree))
+            self.thread.start()
 
     def run_detection(self, tree):
         # create a progress bar at the bottom of the result window
@@ -396,8 +409,8 @@ class GUI_IMOPD_IKNL_tool:
         for index, row in paretoset_activities.iterrows():
             # insert values into the treeview widget
             tree.insert("", "end",
-                             values=(row['patterns'], row['Frequency_Interest'],
-                                     row['Outcome_Interest'], row['Case_Distance_Interest']))
+                        values=(row['patterns'], row['Frequency_Interest'],
+                                row['Outcome_Interest'], row['Case_Distance_Interest']))
 
     def creat_table(self, table_result_frame):
         tree = ttk.Treeview(table_result_frame, columns=("patterns",
@@ -858,6 +871,64 @@ class GUI_IMOPD_IKNL_tool:
             canvas = FigureCanvasTkAgg(fig, master=result_canvas)
             canvas.draw()
             canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+    def Automatic_detection(self):
+        # open new windows to get the parameters for the automatic detection
+        self.Automatic_detection_window = tk.Toplevel(self.master)
+        self.Automatic_detection_window.title("Automatic detection")
+        self.Automatic_detection_window.grab_set()
+        self.Automatic_detection_window.focus_set()
+        # self.Automatic_detection_window.geometry("500x500")
+
+        # add text holder for receiving input from user below
+        setting_frame = tk.Frame(self.Automatic_detection_window)
+        setting_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        text_holder_label = tk.Label(setting_frame, text="Max extension step: ")
+        text_holder_label.pack(side=tk.LEFT, padx=10, pady=10)
+        text_holder = tk.Entry(setting_frame, width=5)
+        text_holder.pack(side=tk.LEFT, padx=10, pady=10)
+
+        eventual_label = tk.Label(setting_frame, text="Max gap between events: ")
+        eventual_label.pack(side=tk.LEFT, padx=10, pady=10)
+        eventual_holder = tk.Entry(setting_frame, width=5)
+        eventual_holder.pack(side=tk.LEFT, padx=10, pady=10)
+
+        # get the location to save the results of the automatic detection
+        folder_frame = tk.Frame(self.Automatic_detection_window)
+        folder_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        folder_label = tk.Label(folder_frame, text="No folder selected", borderwidth=1,
+                                   relief="solid",
+                                   width=50, background="white", anchor="w", padx=5, pady=5, justify="left")
+        folder_label.pack(side=tk.LEFT, padx=10, pady=10)
+
+        select_file_button = tk.Button(folder_frame, text="Select folder",
+                                            command=lambda: self.select_folder(folder_label))
+        select_file_button.pack(side=tk.LEFT, padx=10, pady=10)
+
+        # add button to start the automatic detection
+        button_frame = tk.Frame(self.Automatic_detection_window)
+        button_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        button = tk.Button(button_frame, text="Start Automatic detection",
+                           command=lambda: self.start_automatic_detection(text_holder, eventual_holder))
+        button.pack(side=tk.BOTTOM, padx=10, pady=10)
+
+    def select_folder(self, folder_label):
+        # get file path for only csv files
+        self.saving_directory = filedialog.askdirectory(title="Select an event log (.cvs format)")
+
+        #check if the directory is exist
+        if self.saving_directory != "":
+            folder_label.config(text=self.saving_directory)
+        else:
+            messagebox.showerror("Error", "Please select a folder")
+
+    def start_automatic_detection(self, text_holder, eventual_holder):
+        Max_extension_step = text_holder.get()
+        Max_extension_step = int(Max_extension_step)
+
+        Max_gap_between_events = eventual_holder.get()
+        Max_gap_between_events = int(Max_gap_between_events)
+
 
 
 root = tk.Tk()

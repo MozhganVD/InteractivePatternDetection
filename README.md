@@ -12,7 +12,7 @@ To use the implemented tool, you need to have a labeled event log in .cvs format
 ![IMAGE](pic/Settings.PNG)
 
 3. Set and save the required settings and click ```Save Setting```
-4. Check desired interest functions (we recommend using all of them) and ```Start Pattern Disocvery```
+4. Check desired interest functions (we recommend using all of them) and click ```Interactive Pattern Disocvery``` button button to initiate the tool in interactive mod:
 ![IMAGE](pic/Settings_1.PNG)
 
 5. Running on a big dataset for the first time would take some time for calculating the pairwise case distances (:coffee:), then you have the results in new window:
