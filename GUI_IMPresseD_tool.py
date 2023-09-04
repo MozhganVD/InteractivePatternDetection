@@ -1,6 +1,7 @@
 import pickle
 import random
 import threading
+import time
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
@@ -17,6 +18,7 @@ from paretoset import paretoset
 import pyperclip
 from pm4py.algo.filtering.log.variants import variants_filter
 from pm4py.objects.log.obj import EventLog
+from Auto_IMPID import AutoStepWise_PPD
 from IMIPD import VariantSelection, create_pattern_attributes, calculate_pairwise_case_distance, Trace_graph_generator, \
     Pattern_extension, plot_patterns, Single_Pattern_Extender
 
@@ -33,39 +35,50 @@ class GUI_IMOPD_IKNL_tool:
         self.welcome_label.config(font=("Courier", 15))
 
         # add file label and button
-        self.file_label = tk.Label(self.master, text="No file selected", borderwidth=1, relief="solid",
-                                   width=50, background="white", anchor="w", padx=5, pady=5, justify="left")
-        self.file_label.pack(side=tk.TOP, padx=10, pady=10)
-        self.select_file_button = tk.Button(self.master, text="Select file", command=self.select_file)
-        self.select_file_button.pack(side=tk.TOP, padx=10, pady=10)
+        frame_file = tk.Frame(self.master)
+        frame_file.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        self.file_label = tk.Label(frame_file, text="No file selected", borderwidth=1, relief="solid",
+                                   width=100, background="white", anchor="w", padx=5, pady=5, justify="left")
+        self.file_label.pack(side=tk.LEFT, padx=10, pady=10)
+        self.select_file_button = tk.Button(frame_file, text="Select file", command=self.select_file)
+        self.select_file_button.pack(side=tk.LEFT, padx=10, pady=10)
 
         # create a frame for comboboxes
         self.setting_frame = tk.Frame(self.master)
         self.setting_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
         # create combobox for selecting the case id column
-        self.case_id_label = tk.Label(self.setting_frame, text="case id column: ")
+        self.case_id_label = tk.Label(self.setting_frame, text="Case ID column: ")
         self.case_id_label.pack(side=tk.LEFT, padx=10, pady=10)
         self.case_id_combobox = ttk.Combobox(self.setting_frame, state="readonly")
         self.case_id_combobox.pack(side=tk.LEFT, padx=10, pady=10)
 
         # create combobox for selecting the activity column
-        self.activity_label = tk.Label(self.setting_frame, text="activity column: ")
+        self.activity_label = tk.Label(self.setting_frame, text="Activity column: ")
         self.activity_label.pack(side=tk.LEFT, padx=10, pady=10)
         self.activity_combobox = ttk.Combobox(self.setting_frame, state="readonly")
         self.activity_combobox.pack(side=tk.LEFT, padx=10, pady=10)
 
-        # create combobox for selecting the timestamp column
-        self.timestamp_label = tk.Label(self.setting_frame, text="timestamp column: ")
-        self.timestamp_label.pack(side=tk.LEFT, padx=10, pady=10)
-        self.timestamp_combobox = ttk.Combobox(self.setting_frame, state="readonly")
-        self.timestamp_combobox.pack(side=tk.LEFT, padx=10, pady=10)
-
         # create combobox for selecting the outcome column
-        self.outcome_label = tk.Label(self.setting_frame, text="outcome column: ")
+        self.outcome_label = tk.Label(self.setting_frame, text="Outcome column: ")
         self.outcome_label.pack(side=tk.LEFT, padx=10, pady=10)
         self.outcome_combobox = ttk.Combobox(self.setting_frame, state="readonly")
         self.outcome_combobox.pack(side=tk.LEFT, padx=10, pady=10)
+
+        # create a frame for time settings
+        time_frame = tk.Frame(self.master)
+        time_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        # create combobox for selecting the timestamp column
+        self.timestamp_label = tk.Label(time_frame, text="Timestamp column: ")
+        self.timestamp_label.pack(side=tk.LEFT, padx=10, pady=10)
+        self.timestamp_combobox = ttk.Combobox(time_frame, state="readonly")
+        self.timestamp_combobox.pack(side=tk.LEFT, padx=10, pady=10)
+
+        # create a entry widget for getting delta time
+        self.delta_time_label = tk.Label(time_frame, text="Delta time (in second): ")
+        self.delta_time_label.pack(side=tk.LEFT, padx=10, pady=10)
+        self.delta_time_entry = tk.Entry(time_frame)
+        self.delta_time_entry.pack(side=tk.LEFT, padx=10, pady=10)
 
         # creat a menu with checkbuttons for selecting the categorical attributes
         self.menubutton = tk.Menubutton(self.master, text="Choose categorical attributes",
@@ -301,28 +314,58 @@ class GUI_IMOPD_IKNL_tool:
             self.thread = threading.Thread(target=self.run_detection(tree))
             self.thread.start()
 
+    def create_patient_data(self):
+        patient_data = pd.DataFrame()
+        if self.with_numerical:
+            patient_data[self.numerical_attributes] = self.df[self.numerical_attributes]
+        if self.with_categorical:
+            patient_data[self.categorical_attributes] = self.df[self.categorical_attributes]
+
+        patient_data[self.case_id] = self.df[self.case_id]
+        patient_data[self.outcome] = self.df[self.outcome]
+        patient_data = patient_data.drop_duplicates(subset=[self.case_id], keep='first')
+
+        patient_data.sort_values(by=self.case_id, inplace=True)
+        patient_data.reset_index(inplace=True, drop=True)
+
+        # create feature for each activity
+        patient_data[list(self.df[self.activity].unique())] = 0
+
+        return patient_data
+
+    def creat_pairwise_distance(self):
+        # calculate the pairwise case distance or load it from the file if it is already calculated
+        folder_address = os.path.dirname(self.file_path) + "/"
+        distance_files = folder_address + "dist"
+        if not os.path.exists(distance_files):
+            X_features = self.patient_data.drop([self.case_id, self.outcome], axis=1)
+            pairwise_distances_array = calculate_pairwise_case_distance(X_features, self.numerical_attributes)
+            os.makedirs(distance_files)
+            with open(distance_files + "/pairwise_case_distances.pkl", 'wb') as f:
+                pickle.dump(pairwise_distances_array, f)
+
+        else:
+            with open(distance_files + "/pairwise_case_distances.pkl", 'rb') as f:
+                pairwise_distances_array = pickle.load(f)
+
+        pair_cases = [(a, b) for idx, a in enumerate(self.patient_data.index) for b in
+                      self.patient_data.index[idx + 1:]]
+        case_size = len(self.patient_data)
+        i = 0
+        start_search_points = []
+        for k in range(case_size):
+            start_search_points.append(k * case_size - (i + k))
+            i += k
+
+        return pairwise_distances_array, pair_cases, start_search_points
+
     def run_detection(self, tree):
         # create a progress bar at the bottom of the result window
         self.progress_bar.start(10)
 
-        self.patient_data = pd.DataFrame()
-        if self.with_numerical:
-            self.patient_data[self.numerical_attributes] = self.df[self.numerical_attributes]
-        if self.with_categorical:
-            self.patient_data[self.categorical_attributes] = self.df[self.categorical_attributes]
-
-        self.patient_data[self.case_id] = self.df[self.case_id]
-        self.patient_data[self.outcome] = self.df[self.outcome]
-        self.patient_data = self.patient_data.drop_duplicates(subset=[self.case_id], keep='first')
-
-        self.patient_data.sort_values(by=self.case_id, inplace=True)
-        self.patient_data.reset_index(inplace=True, drop=True)
-
+        self.patient_data = self.create_patient_data()
         # variant selection
         selected_variants = VariantSelection(self.df, self.case_id, self.activity, self.timestamp)
-
-        # create feature for each activity
-        self.patient_data[list(self.df[self.activity].unique())] = 0
         counter = 1
         for case in selected_variants["case:concept:name"].unique():
             counter += 1
@@ -334,28 +377,7 @@ class GUI_IMOPD_IKNL_tool:
                 for Ocase in Other_cases:
                     self.patient_data.loc[self.patient_data[self.case_id] == Ocase, act] = Number_of_act
 
-        # calculate the pairwise case distance or load it from the file if it is already calculated
-        folder_address = os.path.dirname(self.file_path) + "/"
-        distance_files = folder_address + "dist"
-        if not os.path.exists(distance_files):
-            X_features = self.patient_data.drop([self.case_id, self.outcome], axis=1)
-            self.pairwise_distances_array = calculate_pairwise_case_distance(X_features, self.numerical_attributes)
-            os.makedirs(distance_files)
-            with open(distance_files + "/pairwise_case_distances.pkl", 'wb') as f:
-                pickle.dump(self.pairwise_distances_array, f)
-
-        else:
-            with open(distance_files + "/pairwise_case_distances.pkl", 'rb') as f:
-                self.pairwise_distances_array = pickle.load(f)
-
-        self.pair_cases = [(a, b) for idx, a in enumerate(self.patient_data.index) for b in
-                           self.patient_data.index[idx + 1:]]
-        case_size = len(self.patient_data)
-        i = 0
-        self.start_search_points = []
-        for k in range(case_size):
-            self.start_search_points.append(k * case_size - (i + k))
-            i += k
+        self.pairwise_distances_array, self.pair_cases, self.start_search_points = self.creat_pairwise_distance()
 
         self.visualization = ['Outcome_Interest', 'Frequency_Interest', 'Case_Distance_Interest']
         # check if the checkbox for interest function is checked
@@ -505,6 +527,9 @@ class GUI_IMOPD_IKNL_tool:
         self.EventLog_graphs = dict()
         self.Patterns_Dictionary = dict()
         self.all_variants = dict()
+        d_time = self.delta_time_entry.get()
+        d_time = float(d_time)
+
         filtered_cases = self.df.loc[self.df[self.activity] == Core_activity, self.case_id]
         filtered_main_data = self.df[self.df[self.case_id].isin(filtered_cases)]
         # Keep only variants and its frequency
@@ -532,7 +557,7 @@ class GUI_IMOPD_IKNL_tool:
         for case in selected_variants[self.case_id].unique():
             case_data = selected_variants[selected_variants[self.case_id] == case]
             if case not in self.EventLog_graphs.keys():
-                Trace_graph = Trace_graph_generator(selected_variants, self.patient_data, Core_activity, 1,
+                Trace_graph = Trace_graph_generator(selected_variants, self.patient_data, Core_activity, d_time,
                                                     case, self.color_act_dict,
                                                     self.case_id, self.activity, timestamp)
 
@@ -873,62 +898,114 @@ class GUI_IMOPD_IKNL_tool:
             canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
     def Automatic_detection(self):
-        # open new windows to get the parameters for the automatic detection
-        self.Automatic_detection_window = tk.Toplevel(self.master)
-        self.Automatic_detection_window.title("Automatic detection")
-        self.Automatic_detection_window.grab_set()
-        self.Automatic_detection_window.focus_set()
-        # self.Automatic_detection_window.geometry("500x500")
+        if self.correlation_function.get() == 0 and \
+                self.frequency_function.get() == 0 and \
+                self.distance_function.get() == 0:
+            messagebox.showerror("Error", "You need to select at least one interest function!")
+        else:
+            # check if the checkbox for interest function is checked
+            self.pareto_features = []
+            self.pareto_sense = []
+            if self.correlation_function.get():
+                self.pareto_features.append('Outcome_Interest')
+                self.pareto_sense.append(self.direction_correlation_function.get())
+            if self.frequency_function.get():
+                self.pareto_features.append('Frequency_Interest')
+                self.pareto_sense.append(self.direction_frequency_function.get())
+            if self.distance_function.get():
+                self.pareto_features.append('Case_Distance_Interest')
+                self.pareto_sense.append(self.direction_distance_function.get())
 
-        # add text holder for receiving input from user below
-        setting_frame = tk.Frame(self.Automatic_detection_window)
-        setting_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
-        text_holder_label = tk.Label(setting_frame, text="Max extension step: ")
-        text_holder_label.pack(side=tk.LEFT, padx=10, pady=10)
-        text_holder = tk.Entry(setting_frame, width=5)
-        text_holder.pack(side=tk.LEFT, padx=10, pady=10)
+            # open new windows to get the parameters for the automatic detection
+            self.Automatic_detection_window = tk.Toplevel(self.master)
+            self.Automatic_detection_window.title("Automatic detection")
+            self.Automatic_detection_window.grab_set()
+            self.Automatic_detection_window.focus_set()
+            # self.Automatic_detection_window.geometry("500x500")
 
-        eventual_label = tk.Label(setting_frame, text="Max gap between events: ")
-        eventual_label.pack(side=tk.LEFT, padx=10, pady=10)
-        eventual_holder = tk.Entry(setting_frame, width=5)
-        eventual_holder.pack(side=tk.LEFT, padx=10, pady=10)
+            # add text holder for receiving input from user below
+            setting_frame = tk.Frame(self.Automatic_detection_window)
+            setting_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+            text_holder_label = tk.Label(setting_frame, text="Max extension step: ")
+            text_holder_label.pack(side=tk.LEFT, padx=10, pady=10)
+            text_holder = tk.Entry(setting_frame, width=5)
+            text_holder.pack(side=tk.LEFT, padx=10, pady=10)
 
-        # get the location to save the results of the automatic detection
-        folder_frame = tk.Frame(self.Automatic_detection_window)
-        folder_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
-        folder_label = tk.Label(folder_frame, text="No folder selected", borderwidth=1,
-                                   relief="solid",
-                                   width=50, background="white", anchor="w", padx=5, pady=5, justify="left")
-        folder_label.pack(side=tk.LEFT, padx=10, pady=10)
+            eventual_label = tk.Label(setting_frame, text="Max gap between events: ")
+            eventual_label.pack(side=tk.LEFT, padx=10, pady=10)
+            eventual_holder = tk.Entry(setting_frame, width=5)
+            eventual_holder.pack(side=tk.LEFT, padx=10, pady=10)
 
-        select_file_button = tk.Button(folder_frame, text="Select folder",
-                                            command=lambda: self.select_folder(folder_label))
-        select_file_button.pack(side=tk.LEFT, padx=10, pady=10)
+            test_label = tk.Label(setting_frame, text="Testing percentage: ")
+            test_label.pack(side=tk.LEFT, padx=10, pady=10)
+            test_holder = tk.Entry(setting_frame, width=5)
+            test_holder.pack(side=tk.LEFT, padx=10, pady=10)
 
-        # add button to start the automatic detection
-        button_frame = tk.Frame(self.Automatic_detection_window)
-        button_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
-        button = tk.Button(button_frame, text="Start Automatic detection",
-                           command=lambda: self.start_automatic_detection(text_holder, eventual_holder))
-        button.pack(side=tk.BOTTOM, padx=10, pady=10)
+            # get the location to save the results of the automatic detection
+            folder_frame = tk.Frame(self.Automatic_detection_window)
+            folder_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+            folder_label = tk.Label(folder_frame, text="No folder selected", borderwidth=1,
+                                    relief="solid",
+                                    width=50, background="white", anchor="w", padx=5, pady=5, justify="left")
+            folder_label.pack(side=tk.LEFT, padx=10, pady=10)
+
+            select_file_button = tk.Button(folder_frame, text="Select folder",
+                                           command=lambda: self.select_folder(folder_label))
+            select_file_button.pack(side=tk.LEFT, padx=10, pady=10)
+
+            # add button to start the automatic detection
+            button_frame = tk.Frame(self.Automatic_detection_window)
+            button_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+            button = tk.Button(button_frame, text="Start Automatic detection",
+                               command=lambda: self.start_automatic_detection(text_holder, eventual_holder, test_holder))
+            button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
     def select_folder(self, folder_label):
         # get file path for only csv files
         self.saving_directory = filedialog.askdirectory(title="Select an event log (.cvs format)")
 
-        #check if the directory is exist
+        # check if the directory exists
         if self.saving_directory != "":
             folder_label.config(text=self.saving_directory)
         else:
             messagebox.showerror("Error", "Please select a folder")
 
-    def start_automatic_detection(self, text_holder, eventual_holder):
+    def start_automatic_detection(self, text_holder, eventual_holder, test_holder):
+        # creat a frame for loading message
+        self.loading_frame = tk.Frame(self.Automatic_detection_window)
+        self.loading_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
+        self.loading_text = "Loading... \n Please wait..."
+        self.loading_label = tk.Label(self.loading_frame, text=self.loading_text, justify="left")
+        self.loading_label.pack(side=tk.BOTTOM, padx=10, pady=10)
+
+
         Max_extension_step = text_holder.get()
         Max_extension_step = int(Max_extension_step)
 
         Max_gap_between_events = eventual_holder.get()
         Max_gap_between_events = int(Max_gap_between_events)
 
+        test_data_percentage = test_holder.get()
+        test_data_percentage = float(test_data_percentage)
+
+        self.patient_data = self.create_patient_data()
+        d_time = self.delta_time_entry.get()
+        d_time = float(d_time)
+        pairwise_distances_array, pair_cases, start_search_points = self.creat_pairwise_distance()
+
+        train_X, test_X, All_extended_patterns = AutoStepWise_PPD(Max_extension_step, Max_gap_between_events,
+                                                                  test_data_percentage, self.df, self.patient_data,
+                                                                  pairwise_distances_array, pair_cases,
+                                                                  start_search_points, self.case_id,
+                                                                  self.activity, self.outcome, self.timestamp,
+                                                                  self.pareto_features, self.pareto_sense, d_time,
+                                                                  self.color_act_dict)
+
+        # save the results
+        train_X.to_csv(self.saving_directory + "/train_X.csv", index=False)
+        test_X.to_csv(self.saving_directory + "/test_X.csv", index=False)
+
+        self.loading_label.config(text="discovery is done! \n Please check the folder for the results")
 
 
 root = tk.Tk()
