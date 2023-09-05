@@ -11,11 +11,11 @@ To use the implemented tool, you need to have a labeled event log in .cvs format
 2. Run ```GUI_IMPresseD_tool.py```, then continue the discovery procedure using the GUI:
 ![IMAGE](pic/Settings.PNG)
 
-3. Set and save the required settings and click ```Save Setting```
+3. Set the required settings and click ```Save Setting```
 4. Check desired interest functions (we recommend using all of them) and click ```Interactive Pattern Disocvery``` button to initiate the tool in interactive mod:
 ![IMAGE](pic/Settings_1.PNG)
 
-5. Running on a big dataset for the first time would take some time for calculating the pairwise case distances (:coffee:), then you have the results in new window:
+5. Note! Running on a big dataset for the first time would take some time for calculating the pairwise-case distances (:coffee:), then you have the results in new window:
 
 ![IMAGE](pic/Results_1.PNG)
 

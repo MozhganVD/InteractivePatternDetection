@@ -129,6 +129,7 @@ class GUI_IMOPD_IKNL_tool:
         self.activity_combobox.set('')
         self.timestamp_combobox.set('')
         self.outcome_combobox.set('')
+        self.delta_time_entry.delete(0, tk.END)
 
         # Clear all buttons and text widgets
         self.start_detection_button.destroy()
@@ -169,9 +170,10 @@ class GUI_IMOPD_IKNL_tool:
         self.activity = self.activity_combobox.get()
         self.timestamp = self.timestamp_combobox.get()
         self.outcome = self.outcome_combobox.get()
+        self.delta_time = self.delta_time_entry.get()
 
         # check if all comboboxes are filled
-        if self.case_id and self.activity and self.timestamp and self.outcome:
+        if self.case_id and self.activity and self.timestamp and self.outcome and self.delta_time:
             # set the right format for the dataframe columns
             self.df[self.activity] = self.df[self.activity].str.replace("_", "-")
             self.df[self.timestamp] = pd.to_datetime(self.df[self.timestamp])
@@ -261,7 +263,7 @@ class GUI_IMOPD_IKNL_tool:
             self.direction_combobox_3.current(1)
 
         else:
-            messagebox.showerror("Error", "You need to select case id, activity, timestamp and outcome!")
+            messagebox.showerror("Error", "You need to select case id, activity, timestamp and outcome and delta time!")
 
     def start_detection(self):
         if self.correlation_function.get() == 0 and \
