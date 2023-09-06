@@ -7,6 +7,7 @@ from pm4py.algo.filtering.log.variants import variants_filter
 from pm4py.objects.log.obj import EventLog
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import pdist
+from scipy.stats import spearmanr
 from sklearn import preprocessing
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.preprocessing import LabelEncoder
@@ -62,36 +63,41 @@ def similarity_measuring_patterns(patterns_data, patient_data, pair_cases, start
     return patterns_data
 
 
-def predictive_measuring_patterns(patterns_data, patient_data, label_class, Core_activity=None):
+def predictive_measuring_patterns(patterns_data, patient_data, label_class, Core_activity, outcome_type):
     # if Core_activity is not None:
     #     patient_data = patient_data[patient_data[Core_activity] != 0]
 
-    x = patient_data[patterns_data['patterns']]
-    cat_y_all = patient_data[label_class]
+    if outcome_type == 'binary':
+        x = patient_data[patterns_data['patterns']]
+        cat_y_all = patient_data[label_class]
 
-    info_gain = mutual_info_classif(x, cat_y_all, discrete_features=True)
-    patterns_data['Outcome_Interest'] = info_gain.reshape(-1, 1)
+        info_gain = mutual_info_classif(x, cat_y_all, discrete_features=True)
+        patterns_data['Outcome_Interest'] = info_gain.reshape(-1, 1)
 
-    # for pattern in patterns_data['patterns']:
-    #
-    #     cat_y = list(patient_data.loc[patient_data[pattern] > 0, label_class])
-    #     cat_y_out = list(patient_data.loc[patient_data[pattern] == 0, label_class])
-    #
-    #     patterns_data.loc[patterns_data['patterns'] == pattern,
-    #                       "PositiveOutcome_rate_pattern"] = np.sum(cat_y) / len(cat_y)
-    #     patterns_data.loc[patterns_data['patterns'] == pattern,
-    #                       "PositiveOutcome_rate_anti-pattern"] = np.sum(cat_y_out) / len(cat_y_out)
-    #
-    #     cor, _ = spearmanr(cat_y_all, x[pattern])
-    #     if np.isnan(cor):
-    #         patterns_data.loc[patterns_data['patterns'] == pattern, 'Outcome_Correlation'] = 0
-    #         patterns_data.loc[patterns_data['patterns'] == pattern, 'p_values'] = np.nan
-    #     else:
-    #         patterns_data.loc[patterns_data['patterns'] == pattern, 'Outcome_Correlation'], _ = \
-    #             spearmanr(cat_y_all, x[pattern])
-    #
-    #         _, patterns_data.loc[patterns_data['patterns'] == pattern, 'p_values'] = \
-    #             spearmanr(cat_y_all, x[pattern])
+    elif outcome_type == 'numerical':
+        for pattern in patterns_data['patterns']:
+            cat_y_all = patient_data[label_class]
+            x = patient_data[pattern]
+            # cat_y = list(patient_data.loc[patient_data[pattern] > 0, label_class])
+            # cat_y_out = list(patient_data.loc[patient_data[pattern] == 0, label_class])
+
+            # patterns_data.loc[patterns_data['patterns'] == pattern,
+            #                   "PositiveOutcome_rate_pattern"] = np.sum(cat_y) / len(cat_y)
+            # patterns_data.loc[patterns_data['patterns'] == pattern,
+            #                   "PositiveOutcome_rate_anti-pattern"] = np.sum(cat_y_out) / len(cat_y_out)
+
+            cor, _ = spearmanr(cat_y_all, x)
+            if np.isnan(cor):
+                patterns_data.loc[patterns_data['patterns'] == pattern, 'Outcome_Interest'] = 0
+                patterns_data.loc[patterns_data['patterns'] == pattern, 'p_values'] = np.nan
+            else:
+                patterns_data.loc[patterns_data['patterns'] == pattern, 'Outcome_Interest'], _ = \
+                    spearmanr(cat_y_all, x)
+
+                _, patterns_data.loc[patterns_data['patterns'] == pattern, 'p_values'] = \
+                    spearmanr(cat_y_all, x)
+
+        patterns_data['Outcome_Interest'] = patterns_data['Outcome_Interest'].abs()
 
     return patterns_data
 
@@ -133,14 +139,14 @@ def create_pattern_frame(pattern_list):
 
 
 def create_pattern_attributes(patient_data, label_class, Core_activity, pattern_list,
-                              pairwise_distances_array, pair_cases, start_search_points):
+                              pairwise_distances_array, pair_cases, start_search_points, outcome_type):
     patterns_data = create_pattern_frame(pattern_list)
     ## Frequency-based measures
     patterns_data = frequency_measuring_patterns(patterns_data, pattern_list, patient_data, Core_activity)
     print('frequency measures done')
 
     ## Discriminative measures
-    patterns_data = predictive_measuring_patterns(patterns_data, patient_data, label_class, Core_activity)
+    patterns_data = predictive_measuring_patterns(patterns_data, patient_data, label_class, Core_activity, outcome_type)
     print('predictive measures done')
 
     ## Similarity measures

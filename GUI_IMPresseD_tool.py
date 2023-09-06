@@ -59,11 +59,17 @@ class GUI_IMOPD_IKNL_tool:
         self.activity_combobox = ttk.Combobox(self.setting_frame, state="readonly")
         self.activity_combobox.pack(side=tk.LEFT, padx=10, pady=10)
 
-        # create combobox for selecting the outcome column
-        self.outcome_label = tk.Label(self.setting_frame, text="Outcome column: ")
+        # create frame for outcome settings
+        self.outcome_frame = tk.Frame(self.master)
+        self.outcome_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        self.outcome_label = tk.Label(self.outcome_frame, text="Outcome column: ")
         self.outcome_label.pack(side=tk.LEFT, padx=10, pady=10)
-        self.outcome_combobox = ttk.Combobox(self.setting_frame, state="readonly")
+        self.outcome_combobox = ttk.Combobox(self.outcome_frame, state="readonly")
         self.outcome_combobox.pack(side=tk.LEFT, padx=10, pady=10)
+        self.outcome_type_label = tk.Label(self.outcome_frame, text="Outcome type: ")
+        self.outcome_type_label.pack(side=tk.LEFT, padx=10, pady=10)
+        self.outcome_type_combobox = ttk.Combobox(self.outcome_frame, state="readonly")
+        self.outcome_type_combobox.pack(side=tk.LEFT, padx=10, pady=10)
 
         # create a frame for time settings
         time_frame = tk.Frame(self.master)
@@ -106,8 +112,9 @@ class GUI_IMOPD_IKNL_tool:
         self.auto_detection_button = tk.Button(self.master, text="Automatic Pattern Discovery",
                                                command=self.Automatic_detection)
         self.interest_function_frame = tk.Frame(self.master)
-        self.interest_function_frame_2 = tk.Frame(self.interest_function_frame)
-        self.interest_function_frame_3 = tk.Frame(self.interest_function_frame)
+        self.interest_function_frame_2 = tk.Frame(self.master)
+        self.interest_function_frame_3 = tk.Frame(self.master)
+        self.visualization_frame = tk.Frame(self.master)
 
     def select_file(self):
         # get file path for only csv files
@@ -129,6 +136,7 @@ class GUI_IMOPD_IKNL_tool:
         self.activity_combobox.set('')
         self.timestamp_combobox.set('')
         self.outcome_combobox.set('')
+        self.outcome_type_combobox.set('')
         self.delta_time_entry.delete(0, tk.END)
 
         # Clear all buttons and text widgets
@@ -137,12 +145,14 @@ class GUI_IMOPD_IKNL_tool:
         self.interest_function_frame.destroy()
         self.interest_function_frame_2.destroy()
         self.interest_function_frame_3.destroy()
+        self.visualization_frame.destroy()
 
         # add column names to the comboboxes
         self.case_id_combobox.config(values=list(df.columns))
         self.activity_combobox.config(values=list(df.columns))
         self.timestamp_combobox.config(values=list(df.columns))
         self.outcome_combobox.config(values=list(df.columns))
+        self.outcome_type_combobox.config(values=['binary', 'numerical'])
         # clear menu for numerical attributes
         self.menu_num.delete(0, tk.END)
         self.menu.delete(0, tk.END)
@@ -170,10 +180,11 @@ class GUI_IMOPD_IKNL_tool:
         self.activity = self.activity_combobox.get()
         self.timestamp = self.timestamp_combobox.get()
         self.outcome = self.outcome_combobox.get()
+        self.outcome_type = self.outcome_type_combobox.get()
         self.delta_time = self.delta_time_entry.get()
 
         # check if all comboboxes are filled
-        if self.case_id and self.activity and self.timestamp and self.outcome and self.delta_time:
+        if self.case_id and self.activity and self.timestamp and self.outcome and self.delta_time and self.outcome_type:
             # set the right format for the dataframe columns
             self.df[self.activity] = self.df[self.activity].str.replace("_", "-")
             self.df[self.timestamp] = pd.to_datetime(self.df[self.timestamp])
@@ -261,6 +272,18 @@ class GUI_IMOPD_IKNL_tool:
             self.direction_combobox_3['values'] = ("Max", "Min")
             self.direction_combobox_3.pack(side=tk.RIGHT, padx=10, pady=10)
             self.direction_combobox_3.current(1)
+
+            # create a frame for visualization options
+            self.visualization_frame = tk.Frame(self.master)
+            self.visualization_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
+            self.visualization_label = tk.Label(self.visualization_frame, text="Visualization row number:")
+            self.visualization_label.pack(side=tk.LEFT, padx=10, pady=10)
+            self.visualization_row_entry = tk.Entry(self.visualization_frame, width=10)
+            self.visualization_row_entry.pack(side=tk.LEFT, padx=10, pady=10)
+            self.visualization_col_label = tk.Label(self.visualization_frame, text="Visualization column number:")
+            self.visualization_col_label.pack(side=tk.LEFT, padx=10, pady=10)
+            self.visualization_col_entry = tk.Entry(self.visualization_frame, width=10)
+            self.visualization_col_entry.pack(side=tk.LEFT, padx=10, pady=10)
 
         else:
             messagebox.showerror("Error", "You need to select case id, activity, timestamp and outcome and delta time!")
@@ -398,7 +421,7 @@ class GUI_IMOPD_IKNL_tool:
         activity_attributes = create_pattern_attributes(self.patient_data, self.outcome, None,
                                                         list(self.df[self.activity].unique()),
                                                         self.pairwise_distances_array, self.pair_cases,
-                                                        self.start_search_points)
+                                                        self.start_search_points, self.outcome_type)
 
         Objectives_attributes = activity_attributes[self.pareto_features]
         if 'Outcome_Correlation' in self.pareto_features:
@@ -477,8 +500,8 @@ class GUI_IMOPD_IKNL_tool:
             # create a new windows for the results of extension
             extension_window = tk.Toplevel(self.master)
             extension_window.title("Extension Results: %s" % Core_activity)
-            extension_window.geometry("1000x900")
-            extension_window.resizable(False, False)
+            # extension_window.geometry("1000x900")
+            # extension_window.resizable(False, False)
             extension_window.grab_set()
             extension_window.focus_set()
             # add multiple tab for showing the results
@@ -583,7 +606,7 @@ class GUI_IMOPD_IKNL_tool:
         pattern_attributes = create_pattern_attributes(self.patient_data, self.outcome,
                                                        Core_activity, list(self.Patterns_Dictionary.keys()),
                                                        self.pairwise_distances_array, self.pair_cases,
-                                                       self.start_search_points)
+                                                       self.start_search_points, self.outcome_type)
 
         Objectives_attributes = pattern_attributes[self.pareto_features]
         if 'Outcome_Correlation' in self.pareto_features:
@@ -627,8 +650,8 @@ class GUI_IMOPD_IKNL_tool:
             self.tab_control.pack(expand=1, fill="both")
             ploting_features = 2 + len(self.numerical_attributes) + len(self.categorical_attributes)
 
-            col_numbers = int(np.ceil(ploting_features / 2))
-            row_numbers = 2
+            col_numbers = int(self.visualization_col_entry.get()) + 1
+            row_numbers = int(self.visualization_row_entry.get())
 
             fig, ax = plot_patterns(self.Patterns_Dictionary, row['patterns'], self.color_act_dict
                                     , pattern_attributes, dim=(row_numbers, col_numbers))
@@ -733,8 +756,8 @@ class GUI_IMOPD_IKNL_tool:
             # create a new windows for the results of extension
             extension_window = tk.Toplevel(self.master)
             extension_window.title("Extension Results: %s" % Core_pattern)
-            extension_window.geometry("1000x900")
-            extension_window.resizable(False, False)
+            # extension_window.geometry("1000x900")
+            # extension_window.resizable(False, False)
             extension_window.grab_set()
             extension_window.focus_set()
             # add multiple tab for showing the results
@@ -791,7 +814,7 @@ class GUI_IMOPD_IKNL_tool:
         pattern_attributes = create_pattern_attributes(self.patient_data, self.outcome,
                                                        Core_pattern, list(self.Patterns_Dictionary.keys()),
                                                        self.pairwise_distances_array, self.pair_cases,
-                                                       self.start_search_points)
+                                                       self.start_search_points, self.outcome_type)
         Objectives_attributes = pattern_attributes[self.pareto_features]
         if 'OutcomeCorrelation' in self.pareto_features:
             Objectives_attributes['OutcomeCorrelation'] = np.abs(Objectives_attributes['OutcomeCorrelation'])
@@ -828,8 +851,8 @@ class GUI_IMOPD_IKNL_tool:
             self.tab_control.pack(expand=1, fill="both")
             ploting_features = 2 + len(self.numerical_attributes) + len(self.categorical_attributes)
 
-            col_numbers = int(np.ceil(ploting_features / 2))
-            row_numbers = 2
+            col_numbers = int(self.visualization_col_entry.get()) + 1
+            row_numbers = int(self.visualization_row_entry.get())
 
             fig, ax = plot_patterns(self.Patterns_Dictionary, row['patterns'], self.color_act_dict
                                     , pattern_attributes, dim=(row_numbers, col_numbers))
