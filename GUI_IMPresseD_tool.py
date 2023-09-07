@@ -37,7 +37,7 @@ class GUI_IMOPD_IKNL_tool:
         # add file label and button
         frame_file = tk.Frame(self.master)
         frame_file.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
-        self.file_label = tk.Label(frame_file, text="No file selected", borderwidth=1, relief="solid",
+        self.file_label = tk.Label(frame_file, text="No file selected", borderwidth=0.5, relief="solid",
                                    width=100, background="white", anchor="w", padx=5, pady=5, justify="left")
         self.file_label.pack(side=tk.LEFT, padx=10, pady=10)
         self.select_file_button = tk.Button(frame_file, text="Select file", command=self.select_file)
@@ -60,51 +60,46 @@ class GUI_IMOPD_IKNL_tool:
         self.activity_combobox.pack(side=tk.LEFT, padx=10, pady=10)
 
         # create frame for outcome settings
-        self.outcome_frame = tk.Frame(self.master)
-        self.outcome_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
-        self.outcome_label = tk.Label(self.outcome_frame, text="Outcome column: ")
+        outcome_frame = tk.Frame(self.master)
+        outcome_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        self.outcome_label = tk.Label(outcome_frame, text="Outcome column: ")
         self.outcome_label.pack(side=tk.LEFT, padx=10, pady=10)
-        self.outcome_combobox = ttk.Combobox(self.outcome_frame, state="readonly")
+        self.outcome_combobox = ttk.Combobox(outcome_frame, state="readonly")
         self.outcome_combobox.pack(side=tk.LEFT, padx=10, pady=10)
-        self.outcome_type_label = tk.Label(self.outcome_frame, text="Outcome type: ")
+        self.outcome_type_label = tk.Label(outcome_frame, text="Outcome type: ")
         self.outcome_type_label.pack(side=tk.LEFT, padx=10, pady=10)
-        self.outcome_type_combobox = ttk.Combobox(self.outcome_frame, state="readonly")
+        self.outcome_type_combobox = ttk.Combobox(outcome_frame, state="readonly")
         self.outcome_type_combobox.pack(side=tk.LEFT, padx=10, pady=10)
 
         # create a frame for time settings
         time_frame = tk.Frame(self.master)
         time_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
-        # create combobox for selecting the timestamp column
         self.timestamp_label = tk.Label(time_frame, text="Timestamp column: ")
         self.timestamp_label.pack(side=tk.LEFT, padx=10, pady=10)
         self.timestamp_combobox = ttk.Combobox(time_frame, state="readonly")
         self.timestamp_combobox.pack(side=tk.LEFT, padx=10, pady=10)
-
         # create a entry widget for getting delta time
         self.delta_time_label = tk.Label(time_frame, text="Delta time (in second): ")
         self.delta_time_label.pack(side=tk.LEFT, padx=10, pady=10)
         self.delta_time_entry = tk.Entry(time_frame)
         self.delta_time_entry.pack(side=tk.LEFT, padx=10, pady=10)
 
-        # creat a menu with checkbuttons for selecting the categorical attributes
-        self.menubutton = tk.Menubutton(self.master, text="Choose categorical attributes",
-                                        indicatoron=True, borderwidth=1, relief="raised")
-        self.menu = tk.Menu(self.menubutton, tearoff=False)
-        self.menubutton.configure(menu=self.menu)
-        self.menubutton.pack(side=tk.LEFT, padx=10, pady=10)
-
-        # creat a menu with checkbuttons for selecting the numerical attributes
-        self.menubutton_num = tk.Menubutton(self.master, text="Choose numerical attributes",
-                                            indicatoron=True, borderwidth=1, relief="raised")
-        self.menu_num = tk.Menu(self.menubutton_num, tearoff=False)
-        self.menubutton_num.configure(menu=self.menu_num)
-        self.menubutton_num.pack(side=tk.RIGHT, padx=10, pady=10)
+        # create a frame for buttons
+        button_frame = tk.Frame(self.master)
+        button_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        # create a button for selecting the categorical attributes
+        self.select_categorical_button = tk.Button(button_frame, text="Categorical attributes",
+                                                   command=self.select_categorical, state=tk.DISABLED)
+        self.select_categorical_button.pack(side=tk.LEFT, padx=10, pady=10)
+        # create a button for selecting the numerical attributes
+        self.select_numerical_button = tk.Button(button_frame, text="Numerical attributes",
+                                                 command=self.select_numerical, state=tk.DISABLED)
+        self.select_numerical_button.pack(side=tk.LEFT, padx=10, pady=10)
 
         # create a button for starting the detection
-        self.save_setting_button = tk.Button(self.master, text="Save Setting", command=self.save_setting)
-        self.save_setting_button.pack(side=tk.TOP, padx=10, pady=10)
-        # unable the button until all comboboxes are filled
-        self.save_setting_button.config(state="disabled")
+        self.save_setting_button = tk.Button(button_frame, text="Save Setting", command=self.save_setting)
+        self.save_setting_button.pack(side=tk.LEFT, padx=10, pady=10)
+        self.save_setting_button.config(state=tk.DISABLED)
 
         # create a button for starting the detection
         self.start_detection_button = tk.Button(self.master, text="Interactive Pattern Discovery",
@@ -116,6 +111,57 @@ class GUI_IMOPD_IKNL_tool:
         self.interest_function_frame_3 = tk.Frame(self.master)
         self.visualization_frame = tk.Frame(self.master)
 
+    def select_categorical(self):
+        # creat a window for selecting categorical attributes
+        window = tk.Toplevel(self.master)
+        window.title("Categorical attributes")
+        yscrollbar = tk.Scrollbar(window)
+        yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        label = tk.Label(window,
+                         text="Select the categorical attributes :  ",
+                         padx=10, pady=10)
+        label.pack(side=tk.TOP)
+        self.listbox_cat = tk.Listbox(window, selectmode=tk.MULTIPLE, yscrollcommand=yscrollbar.set)
+        self.listbox_cat.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        for item in list(self.df.columns):
+            self.listbox_cat.insert(tk.END, item)
+
+        self.listbox_cat.config(bg="white")
+        # add a button for saving the selection and closing the window
+        button = tk.Button(window, text="Save", command=lambda: self.save_destroy_cat(window))
+        button.pack(side=tk.BOTTOM)
+
+    def select_numerical(self):
+        window = tk.Toplevel(self.master)
+        window.title("Numerical attributes")
+        yscrollbar = tk.Scrollbar(window)
+        yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        label = tk.Label(window,
+                         text="Select the numerical attributes :  ",
+                         padx=10, pady=10)
+        label.pack(side=tk.TOP)
+        self.listbox_num = tk.Listbox(window, selectmode=tk.MULTIPLE, yscrollcommand=yscrollbar.set)
+        self.listbox_num.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        for item in list(self.df.columns):
+            self.listbox_num.insert(tk.END, item)
+
+        self.listbox_num.config(bg="white")
+        # add a button for saving the selection and closing the window
+        button = tk.Button(window, text="Save", command=lambda: self.save_destroy_num(window))
+        button.pack(side=tk.BOTTOM)
+
+    def save_destroy_cat(self, window):
+        self.categorical_attributes = []
+        for i in self.listbox_cat.curselection():
+            self.categorical_attributes.append(self.listbox_cat.get(i))
+        window.destroy()
+
+    def save_destroy_num(self, window):
+        self.numerical_attributes = []
+        for i in self.listbox_num.curselection():
+            self.numerical_attributes.append(self.listbox_num.get(i))
+        window.destroy()
+
     def select_file(self):
         # get file path for only csv files
         self.file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")],
@@ -126,11 +172,11 @@ class GUI_IMOPD_IKNL_tool:
             # update the file label
             self.file_label.config(text=self.file_path)
             self.df = pd.read_csv(self.file_path)
-            self.show_setting(self.df)
+            self.show_setting()
         else:
             messagebox.showerror("Error", "Please select a csv file")
 
-    def show_setting(self, df):
+    def show_setting(self):
         # clear combo boxes
         self.case_id_combobox.set('')
         self.activity_combobox.set('')
@@ -148,26 +194,29 @@ class GUI_IMOPD_IKNL_tool:
         self.visualization_frame.destroy()
 
         # add column names to the comboboxes
-        self.case_id_combobox.config(values=list(df.columns))
-        self.activity_combobox.config(values=list(df.columns))
-        self.timestamp_combobox.config(values=list(df.columns))
-        self.outcome_combobox.config(values=list(df.columns))
+        Options = list(self.df.columns)
+        self.case_id_combobox.config(values=Options)
+        self.activity_combobox.config(values=Options)
+        self.timestamp_combobox.config(values=Options)
+        self.outcome_combobox.config(values=Options)
         self.outcome_type_combobox.config(values=['binary', 'numerical'])
-        # clear menu for numerical attributes
-        self.menu_num.delete(0, tk.END)
-        self.menu.delete(0, tk.END)
-
-        self.choices = {}
-        for choice in list(df.columns):
-            self.choices[choice] = tk.IntVar(value=0)
-            self.menu.add_checkbutton(label=choice, variable=self.choices[choice],
-                                      onvalue=1, offvalue=0, indicatoron=True)
-
-        self.choices_num = {}
-        for choice in list(df.columns):
-            self.choices_num[choice] = tk.IntVar(value=0)
-            self.menu_num.add_checkbutton(label=choice, variable=self.choices_num[choice],
-                                          onvalue=1, offvalue=0, indicatoron=True)
+        # # clear menu for numerical attributes
+        # self.menu_num.delete(0, tk.END)
+        # self.menu.delete(0, tk.END)
+        #
+        # self.choices = {}
+        # for choice in list(df.columns):
+        #     self.choices[choice] = tk.IntVar(value=0)
+        #     self.menu.add_checkbutton(label=choice, variable=self.choices[choice],
+        #                               onvalue=1, offvalue=0, indicatoron=True)
+        #
+        # self.choices_num = {}
+        # for choice in list(df.columns):
+        #     self.choices_num[choice] = tk.IntVar(value=0)
+        #     self.menu_num.add_checkbutton(label=choice, variable=self.choices_num[choice],
+        #                                   onvalue=1, offvalue=0, indicatoron=True)
+        self.select_categorical_button.config(state="normal")
+        self.select_numerical_button.config(state="normal")
 
         # enable the button for starting the detection
         self.save_setting_button.config(state="normal")
@@ -202,14 +251,12 @@ class GUI_IMOPD_IKNL_tool:
             self.color_act_dict['start'] = 'k'
             self.color_act_dict['end'] = 'k'
 
-            self.categorical_attributes = []
-            self.numerical_attributes = []
-            for name, var in self.choices.items():
-                if var.get() == 1:
-                    self.categorical_attributes.append(name)
-            for name, var in self.choices_num.items():
-                if var.get() == 1:
-                    self.numerical_attributes.append(name)
+            # for name, var in self.choices.items():
+            #     if var.get() == 1:
+            #         self.categorical_attributes.append(name)
+            # for name, var in self.choices_num.items():
+            #     if var.get() == 1:
+            #         self.numerical_attributes.append(name)
 
             # create a button for starting the detection
             self.auto_detection_button = tk.Button(self.master, text="Automatic Pattern Discovery",
@@ -982,7 +1029,8 @@ class GUI_IMOPD_IKNL_tool:
             button_frame = tk.Frame(self.Automatic_detection_window)
             button_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
             button = tk.Button(button_frame, text="Start Automatic detection",
-                               command=lambda: self.start_automatic_detection(text_holder, eventual_holder, test_holder))
+                               command=lambda: self.start_automatic_detection(text_holder, eventual_holder,
+                                                                              test_holder))
             button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
     def select_folder(self, folder_label):
@@ -1003,7 +1051,6 @@ class GUI_IMOPD_IKNL_tool:
         self.loading_label = tk.Label(self.loading_frame, text=self.loading_text, justify="left")
         self.loading_label.pack(side=tk.BOTTOM, padx=10, pady=10)
 
-
         Max_extension_step = text_holder.get()
         Max_extension_step = int(Max_extension_step)
 
@@ -1022,13 +1069,14 @@ class GUI_IMOPD_IKNL_tool:
                                                                   test_data_percentage, self.df, self.patient_data,
                                                                   pairwise_distances_array, pair_cases,
                                                                   start_search_points, self.case_id,
-                                                                  self.activity, self.outcome, self.timestamp,
+                                                                  self.activity, self.outcome, self.outcome_type,
+                                                                  self.timestamp,
                                                                   self.pareto_features, self.pareto_sense, d_time,
                                                                   self.color_act_dict)
 
         # save the results
-        train_X.to_csv(self.saving_directory + "/train_X.csv", index=False)
-        test_X.to_csv(self.saving_directory + "/test_X.csv", index=False)
+        train_X.to_csv(self.saving_directory + "/training_encoded_log.csv", index=False)
+        test_X.to_csv(self.saving_directory + "/testing_encoded_log.csv", index=False)
 
         self.loading_label.config(text="discovery is done! \n Please check the folder for the results")
 

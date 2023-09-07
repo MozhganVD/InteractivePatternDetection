@@ -1,6 +1,8 @@
 from paretoset import paretoset
 import pandas as pd
 import networkx as nx
+from networkx.readwrite import json_graph
+import json
 import pm4py
 import pickle
 import numpy as np
@@ -13,16 +15,24 @@ from tools import create_embedded_pattern_in_trace, Trace_graph_generator, updat
 
 
 def AutoStepWise_PPD(Max_extension_step, Max_gap_between_events, test_data_percentage, data, patient_data,
-                     pairwise_distances_array, pair_cases, start_search_points, case_id, activity, outcome, timestamp,
+                     pairwise_distances_array, pair_cases, start_search_points, case_id, activity, outcome,
+                     outcome_type,
+                     timestamp,
                      pareto_features, pareto_sense, d_time, color_act_dict):
     Direct_predecessor = True
     Direct_successor = True
     Direct_context = True
     Concurrence = True
-    Unique_cases = patient_data.drop_duplicates(subset=[case_id], keep='first')
+    # Unique_cases = patient_data.drop_duplicates(subset=[case_id], keep='first')
     # split test and train data
-    train_data, test_data = train_test_split(Unique_cases, test_size=test_data_percentage, random_state=42,
-                                             stratify=Unique_cases[outcome])
+    if outcome_type == 'binary':
+        train, test = train_test_split(patient_data, test_size=test_data_percentage, random_state=42,
+                                                 stratify=patient_data[outcome])
+    else:
+        train, test = train_test_split(patient_data, test_size=test_data_percentage, random_state=42)
+
+    train_data = patient_data[patient_data[case_id].isin(train[case_id])]
+    test_data = patient_data[patient_data[case_id].isin(test[case_id])]
 
     selected_variants = VariantSelection(data, case_id, activity, timestamp)
     for case in selected_variants[case_id].unique():
@@ -37,7 +47,7 @@ def AutoStepWise_PPD(Max_extension_step, Max_gap_between_events, test_data_perce
     activity_attributes = create_pattern_attributes(train_data, outcome, None,
                                                     list(data[activity].unique()),
                                                     pairwise_distances_array, pair_cases,
-                                                    start_search_points)
+                                                    start_search_points, outcome_type)
 
     Objectives_attributes = activity_attributes[pareto_features]
     mask = paretoset(Objectives_attributes, sense=pareto_sense)
@@ -46,6 +56,10 @@ def AutoStepWise_PPD(Max_extension_step, Max_gap_between_events, test_data_perce
 
     train_X = train_data[All_extended_patterns]
     test_X = test_data[All_extended_patterns]
+    train_X['Case_ID'] = train_data[case_id]
+    test_X['Case_ID'] = test_data[case_id]
+    train_X['Outcome'] = train_data[outcome]
+    test_X['Outcome'] = test_data[outcome]
 
     Extended_patterns_at_stage = dict()
     All_extended_patterns_1_list = []
@@ -202,14 +216,24 @@ def AutoStepWise_PPD(Max_extension_step, Max_gap_between_events, test_data_perce
 
     pattern_attributes = create_pattern_attributes(new_train_data, outcome, None,
                                                    All_extended_patterns_1_list,
-                                                   pairwise_distances_array, pair_cases, start_search_points)
+                                                   pairwise_distances_array, pair_cases, start_search_points,
+                                                   outcome_type)
     Objectives_attributes = pattern_attributes[pareto_features]
     mask = paretoset(Objectives_attributes, sense=pareto_sense)
     paretoset_patterns = pattern_attributes[mask]
     All_extended_patterns.extend(list(paretoset_patterns['patterns']))
 
+    # data = json_graph.node_link_data(test)
+    # json_string = json.dumps(data)
+    # with open('test.json', "w") as file:
+    #     file.write(json_string)
+
     train_X = new_train_data[All_extended_patterns]
     test_X = new_test_data[All_extended_patterns]
+    train_X['Case_ID'] = new_train_data[case_id]
+    test_X['Case_ID'] = new_test_data[case_id]
+    train_X['Outcome'] = new_train_data[outcome]
+    test_X['Outcome'] = new_test_data[outcome]
 
     for ext in range(1, Max_extension_step):
         print("extension number %s " % (ext + 1))
@@ -221,7 +245,8 @@ def AutoStepWise_PPD(Max_extension_step, Max_gap_between_events, test_data_perce
 
         pattern_attributes = create_pattern_attributes(train_patient_data, outcome, None,
                                                        Extension_2_patterns_list,
-                                                       pairwise_distances_array, pair_cases, start_search_points)
+                                                       pairwise_distances_array, pair_cases, start_search_points,
+                                                       outcome_type)
 
         Objectives_attributes = pattern_attributes[pareto_features]
         mask = paretoset(Objectives_attributes, sense=pareto_sense)
@@ -230,5 +255,9 @@ def AutoStepWise_PPD(Max_extension_step, Max_gap_between_events, test_data_perce
 
         train_X = train_patient_data[All_extended_patterns]
         test_X = test_patient_data[All_extended_patterns]
+        train_X['Case_ID'] = train_patient_data[case_id]
+        test_X['Case_ID'] = test_patient_data[case_id]
+        train_X['Outcome'] = train_patient_data[outcome]
+        test_X['Outcome'] = test_patient_data[outcome]
 
     return train_X, test_X, All_extended_patterns
