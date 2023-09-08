@@ -1,7 +1,6 @@
 import pickle
 import random
 import threading
-import time
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
@@ -12,7 +11,6 @@ import numpy as np
 import pandas as pd
 import pm4py
 from matplotlib import pyplot as plt
-import seaborn as sb
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from paretoset import paretoset
 import pyperclip
@@ -20,7 +18,7 @@ from pm4py.algo.filtering.log.variants import variants_filter
 from pm4py.objects.log.obj import EventLog
 from Auto_IMPID import AutoStepWise_PPD
 from IMIPD import VariantSelection, create_pattern_attributes, calculate_pairwise_case_distance, Trace_graph_generator, \
-    Pattern_extension, plot_patterns, Single_Pattern_Extender
+    Pattern_extension, plot_patterns, Single_Pattern_Extender, plot_dashboard
 
 
 class GUI_IMOPD_IKNL_tool:
@@ -344,7 +342,7 @@ class GUI_IMOPD_IKNL_tool:
             # create a new window for showing the results
             self.result_window = tk.Toplevel(self.master)
             self.result_window.title("Results")
-            self.result_window.geometry("1000x900")
+            self.result_window.geometry("1000x1000")
             self.result_window.resizable(False, False)
             self.result_window.grab_set()
             self.result_window.focus_set()
@@ -495,9 +493,6 @@ class GUI_IMOPD_IKNL_tool:
         canvas = FigureCanvasTkAgg(fig, master=self.result_canvas)
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        # insert the unique activities in dataframe to the text box for showing the results i none column
-        # for activity in paretoset_activities['patterns'].unique():
-        #     self.result_text.insert(tk.END, activity + "\n")
 
         # update tree (tabel results) based on the values in pareto_activities
         for index, row in paretoset_activities.iterrows():
@@ -521,12 +516,6 @@ class GUI_IMOPD_IKNL_tool:
         tree.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         tree.bind("<Button-3>", lambda event, arg=tree: self.copy_to_clipboard(event, tree))
 
-        # add vertical scrollbar for the tree widget
-        tree_scrollbar = tk.Scrollbar(table_result_frame, orient=tk.VERTICAL)
-        tree_scrollbar.config(command=tree.yview)
-        tree_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        tree.config(yscrollcommand=tree_scrollbar.set)
-
         return tree
 
     def extension(self):
@@ -547,7 +536,7 @@ class GUI_IMOPD_IKNL_tool:
             # create a new windows for the results of extension
             extension_window = tk.Toplevel(self.master)
             extension_window.title("Extension Results: %s" % Core_activity)
-            # extension_window.geometry("1000x900")
+            extension_window.geometry("1000x900")
             # extension_window.resizable(False, False)
             extension_window.grab_set()
             extension_window.focus_set()
@@ -667,7 +656,7 @@ class GUI_IMOPD_IKNL_tool:
         self.All_Pareto_front[Core_activity]['variants'] = selected_variants
         self.all_pattern_dictionary.update(self.Patterns_Dictionary)
 
-        fig = plt.figure()
+        fig = plt.figure(figsize=(10, 10))
         ax = fig.add_subplot(111, projection='3d')
         ax.set_xlabel(self.visualization[0])
         ax.set_ylabel(self.visualization[1])
@@ -691,7 +680,6 @@ class GUI_IMOPD_IKNL_tool:
         # create a tab for each pattern in the pareto front
         for ticker, row in paretoset_patterns.iterrows():
             tab_name = row['patterns']
-            # number_of_pattern = tab_name.split('_')[-1]
             tab = ttk.Frame(self.tab_control)
             self.tab_control.add(tab, text=tab_name)
             self.tab_control.pack(expand=1, fill="both")
@@ -703,70 +691,53 @@ class GUI_IMOPD_IKNL_tool:
             fig, ax = plot_patterns(self.Patterns_Dictionary, row['patterns'], self.color_act_dict
                                     , pattern_attributes, dim=(row_numbers, col_numbers))
 
-            # plot the distribution of numerical attributes for the pattern
-            for ii, num in enumerate(self.numerical_attributes):
-                # patient_data_core = self.patient_data[self.patient_data[Core_activity] != 0]
-                sb.distplot(self.patient_data.loc[self.patient_data[tab_name] == 0, num], ax=ax[0, ii + 1], color="g")
-                sb.distplot(self.patient_data.loc[self.patient_data[tab_name] > 0, num], ax=ax[0, ii + 1], color="r")
-                ax[0, ii + 1].set_title(num)
-                # ax[0, ii + 1].title.set_size(40)
-                ax[0, ii + 1].set_xlabel('')
-                # ax[0, ii + 1].set_ylabel('density')
-                # set font size for x and y axis
-                # ax[0, ii + 1].tick_params(axis='both', which='major', labelsize=16)
+            fig, ax = plot_dashboard(fig, ax, self.patient_data, self.numerical_attributes,
+                                     self.categorical_attributes, tab_name)
 
-            # plot pie chart for categorical attributes
-            r = 1
-            jj = 1
-            cmap = plt.get_cmap("tab20c")
-            for cat in self.categorical_attributes:
-                all_cat_features = self.patient_data[cat].unique().tolist()
-                all_cat_features.sort()
+            # Create vertical scrollbar
+            scrollbary = tk.Scrollbar(tab, orient=tk.VERTICAL)
+            scrollbary.pack(side=tk.RIGHT, fill=tk.Y)
 
-                cat_features_outpattern = self.patient_data.loc[
-                    self.patient_data[tab_name] == 0, cat].unique().tolist()
-                cat_features_outpattern.sort()
+            # Create horizontal scrollbar
+            scrollbarx = tk.Scrollbar(tab, orient=tk.HORIZONTAL)
+            scrollbarx.pack(side=tk.BOTTOM, fill=tk.X)
 
-                cat_features_inpattern = self.patient_data.loc[self.patient_data[tab_name] > 0, cat].unique().tolist()
-                cat_features_inpattern.sort()
 
-                indexes = [all_cat_features.index(l) for l in cat_features_inpattern]
-                outdexes = [all_cat_features.index(l) for l in cat_features_outpattern]
+            # Create a canvas with a scroll region
+            canvas = tk.Canvas(tab)
+            canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-                all_feature_colors = cmap(np.arange(len(all_cat_features)) * 1)
+            # Attach the canvas to the scrollbar
+            canvas.config(yscrollcommand=scrollbary.set, xscrollcommand=scrollbarx.set)
+            scrollbary.config(command=canvas.yview)
+            scrollbarx.config(command=canvas.xview)
 
-                outer_colors = all_feature_colors[outdexes]
-                inner_colors = all_feature_colors[indexes]
+            # Create a frame for the figure inside the canvas
+            frame = tk.Frame(canvas)
+            canvas.create_window((0, 0), window=frame, anchor="nw")
 
-                textprops = {"fontsize": 8}
-                ax[r, jj].pie(
-                    pd.DataFrame(
-                        self.patient_data.loc[self.patient_data[tab_name] == 0, cat].value_counts()).sort_index()[
-                        cat],
-                    radius=1,
-                    labels=cat_features_outpattern, colors=outer_colors, wedgeprops=dict(width=0.4, edgecolor='w'),
-                    textprops=textprops)
+            # Add the figure to the frame
+            fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+            canvas.draw_figure = FigureCanvasTkAgg(fig, master=frame)
+            canvas.draw_figure.get_tk_widget().pack(fill=tk.BOTH, expand=1)
 
-                ax[r, jj].pie(
-                    pd.DataFrame(
-                        self.patient_data.loc[self.patient_data[tab_name] > 0, cat].value_counts()).sort_index()[cat],
-                    radius=1 - 0.4,
-                    labels=cat_features_inpattern, colors=inner_colors, wedgeprops=dict(width=0.4, edgecolor='w'),
-                    textprops=textprops)
+            # Bind the canvas scrolling to the canvas size
+            canvas.bind("<Configure>", lambda event, canvas=canvas: self.on_configure(event, canvas))
 
-                ax[r, jj].set_title(cat)
-                # ax[r, jj].title.set_size(40)
+            # Bind mousewheel scroll event to the canvas
+            canvas.bind("<MouseWheel>", lambda event, canvas=canvas: self.scroll(event, canvas))
 
-                jj += 1
-                if jj > 5:
-                    r += 1
-                    jj = 1
+            # Make the frame expand when the window is resized
+            tab.grid_rowconfigure(0, weight=1)
+            tab.grid_columnconfigure(0, weight=1)
 
-            result_canvas = tk.Canvas(tab)
-            result_canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-            canvas = FigureCanvasTkAgg(fig, master=result_canvas)
-            canvas.draw()
-            canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+    def on_configure(self, event, canvas):
+        # Update the scroll region to match the canvas size
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+    def scroll(self, event, canvas):
+        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
 
     def copy_to_clipboard(self, event, tree):
         # get the selected row and column
@@ -803,7 +774,7 @@ class GUI_IMOPD_IKNL_tool:
             # create a new windows for the results of extension
             extension_window = tk.Toplevel(self.master)
             extension_window.title("Extension Results: %s" % Core_pattern)
-            # extension_window.geometry("1000x900")
+            extension_window.geometry("1000x1000")
             # extension_window.resizable(False, False)
             extension_window.grab_set()
             extension_window.focus_set()
@@ -869,6 +840,9 @@ class GUI_IMOPD_IKNL_tool:
         paretoset_patterns = pattern_attributes[mask]
 
         # plot the results on the canvas
+        col_numbers = int(self.visualization_col_entry.get()) + 1
+        row_numbers = int(self.visualization_row_entry.get())
+
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.set_xlabel(self.visualization[0])
@@ -898,76 +872,47 @@ class GUI_IMOPD_IKNL_tool:
             self.tab_control.pack(expand=1, fill="both")
             ploting_features = 2 + len(self.numerical_attributes) + len(self.categorical_attributes)
 
-            col_numbers = int(self.visualization_col_entry.get()) + 1
-            row_numbers = int(self.visualization_row_entry.get())
-
             fig, ax = plot_patterns(self.Patterns_Dictionary, row['patterns'], self.color_act_dict
                                     , pattern_attributes, dim=(row_numbers, col_numbers))
 
-            # plot the distribution of numerical attributes for the pattern
-            for ii, num in enumerate(self.numerical_attributes):
-                # patient_data_core = self.patient_data[self.patient_data[Core_activity] != 0]
-                sb.distplot(self.patient_data.loc[self.patient_data[tab_name] == 0, num], ax=ax[0, ii + 1], color="g")
-                sb.distplot(self.patient_data.loc[self.patient_data[tab_name] > 0, num], ax=ax[0, ii + 1], color="r")
-                ax[0, ii + 1].set_title(num)
-                # ax[0, ii + 1].title.set_size(40)
-                ax[0, ii + 1].set_xlabel('')
-                # ax[0, ii + 1].set_ylabel('density')
-                # set font size for x and y axis
-                # ax[0, ii + 1].tick_params(axis='both', which='major', labelsize=16)
+            fig, ax = plot_dashboard(fig, ax, self.patient_data, self.numerical_attributes,
+                                     self.categorical_attributes, tab_name)
 
-            # plot pie chart for categorical attributes
-            r = 1
-            jj = 1
-            cmap = plt.get_cmap("tab20c")
-            for cat in self.categorical_attributes:
-                all_cat_features = self.patient_data[cat].unique().tolist()
-                all_cat_features.sort()
+            # Create vertical scrollbar
+            scrollbary = tk.Scrollbar(tab, orient=tk.VERTICAL)
+            scrollbary.pack(side=tk.RIGHT, fill=tk.Y)
 
-                cat_features_outpattern = self.patient_data.loc[
-                    self.patient_data[tab_name] == 0, cat].unique().tolist()
-                cat_features_outpattern.sort()
+            # Create horizontal scrollbar
+            scrollbarx = tk.Scrollbar(tab, orient=tk.HORIZONTAL)
+            scrollbarx.pack(side=tk.BOTTOM, fill=tk.X)
 
-                cat_features_inpattern = self.patient_data.loc[self.patient_data[tab_name] > 0, cat].unique().tolist()
-                cat_features_inpattern.sort()
+            # Create a canvas with a scroll region
+            canvas = tk.Canvas(tab)
+            canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-                indexes = [all_cat_features.index(l) for l in cat_features_inpattern]
-                outdexes = [all_cat_features.index(l) for l in cat_features_outpattern]
+            # Attach the canvas to the scrollbar
+            canvas.config(yscrollcommand=scrollbary.set, xscrollcommand=scrollbarx.set)
+            scrollbary.config(command=canvas.yview)
+            scrollbarx.config(command=canvas.xview)
 
-                all_feature_colors = cmap(np.arange(len(all_cat_features)) * 1)
+            # Create a frame for the figure inside the canvas
+            frame = tk.Frame(canvas)
+            canvas.create_window((0, 0), window=frame, anchor="nw")
 
-                outer_colors = all_feature_colors[outdexes]
-                inner_colors = all_feature_colors[indexes]
+            # Add the figure to the frame
+            fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+            canvas.draw_figure = FigureCanvasTkAgg(fig, master=frame)
+            canvas.draw_figure.get_tk_widget().pack(fill=tk.BOTH, expand=1)
 
-                textprops = {"fontsize": 8}
-                ax[r, jj].pie(
-                    pd.DataFrame(
-                        self.patient_data.loc[self.patient_data[tab_name] == 0, cat].value_counts()).sort_index()[
-                        cat],
-                    radius=1,
-                    labels=cat_features_outpattern, colors=outer_colors, wedgeprops=dict(width=0.4, edgecolor='w'),
-                    textprops=textprops)
+            # Bind the canvas scrolling to the canvas size
+            canvas.bind("<Configure>", lambda event, canvas=canvas: self.on_configure(event, canvas))
 
-                ax[r, jj].pie(
-                    pd.DataFrame(
-                        self.patient_data.loc[self.patient_data[tab_name] > 0, cat].value_counts()).sort_index()[cat],
-                    radius=1 - 0.4,
-                    labels=cat_features_inpattern, colors=inner_colors, wedgeprops=dict(width=0.4, edgecolor='w'),
-                    textprops=textprops)
+            # Bind mousewheel scroll event to the canvas
+            canvas.bind("<MouseWheel>", lambda event, canvas=canvas: self.scroll(event, canvas))
 
-                ax[r, jj].set_title(cat)
-                # ax[r, jj].title.set_size(40)
-
-                jj += 1
-                if jj > 5:
-                    r += 1
-                    jj = 1
-
-            result_canvas = tk.Canvas(tab)
-            result_canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-            canvas = FigureCanvasTkAgg(fig, master=result_canvas)
-            canvas.draw()
-            canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            # Make the frame expand when the window is resized
+            tab.grid_rowconfigure(0, weight=1)
+            tab.grid_columnconfigure(0, weight=1)
 
     def Automatic_detection(self):
         if self.correlation_function.get() == 0 and \
@@ -1083,6 +1028,6 @@ class GUI_IMOPD_IKNL_tool:
 
 root = tk.Tk()
 # add title to the main window
-root.title("IMPresseD: Interactive Multi-interest Process Pattern Discovery")
+root.title("IMPresseD: Interactive Multi-Interest Process Pattern Discovery")
 app = GUI_IMOPD_IKNL_tool(master=root)
 app.master.mainloop()

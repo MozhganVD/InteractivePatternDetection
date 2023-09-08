@@ -12,7 +12,7 @@ from sklearn import preprocessing
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.preprocessing import LabelEncoder
 from tools import create_embedded_pattern_in_trace, update_pattern_dict
-
+import seaborn as sb
 
 def VariantSelection(main_data, case_id, activities, timestamp):
     filtered_main_data = pm4py.format_dataframe(main_data, case_id=case_id, activity_key=activities,
@@ -355,8 +355,69 @@ def Trace_graph_generator(selected_variants, patient_data, Core_activity, delta_
     return Trace_graph
 
 
-def plot_patterns(Patterns_Dictionary, pattern_id, color_act_dict, pattern_attributes, dim=(2, 3)):
-    fig, ax = plt.subplots(dim[0], dim[1])
+def plot_dashboard(fig, ax, patient_data, numerical_attributes, categorical_attributes, tab_name):
+    # plot the distribution of numerical attributes for the pattern
+    for ii, num in enumerate(numerical_attributes):
+        sb.distplot(patient_data.loc[patient_data[tab_name] == 0, num], ax=ax[0, ii + 1], color="g")
+        sb.distplot(patient_data.loc[patient_data[tab_name] > 0, num], ax=ax[0, ii + 1], color="r")
+        ax[0, ii + 1].set_title(num)
+        ax[0, ii + 1].title.set_size(10)
+        ax[0, ii + 1].set_xlabel('')
+        ax[0, ii + 1].set_ylabel('')
+        ax[0, ii + 1].tick_params(axis='both', which='major', labelsize=6)
+
+    # plot pie chart for categorical attributes
+    r = 1
+    jj = 1
+    cmap = plt.get_cmap("tab20c")
+    for cat in categorical_attributes:
+        all_cat_features = patient_data[cat].unique().tolist()
+        all_cat_features.sort()
+
+        cat_features_outpattern = patient_data.loc[
+            patient_data[tab_name] == 0, cat].unique().tolist()
+        cat_features_outpattern.sort()
+
+        cat_features_inpattern = patient_data.loc[patient_data[tab_name] > 0, cat].unique().tolist()
+        cat_features_inpattern.sort()
+
+        indexes = [all_cat_features.index(l) for l in cat_features_inpattern]
+        outdexes = [all_cat_features.index(l) for l in cat_features_outpattern]
+
+        all_feature_colors = cmap(np.arange(len(all_cat_features)) * 1)
+
+        outer_colors = all_feature_colors[outdexes]
+        inner_colors = all_feature_colors[indexes]
+
+        textprops = {"fontsize": 8}
+        ax[r, jj].pie(
+            pd.DataFrame(
+                patient_data.loc[patient_data[tab_name] == 0, cat].value_counts()).sort_index()[
+                cat],
+            radius=1,
+            labels=cat_features_outpattern, colors=outer_colors, wedgeprops=dict(width=0.4, edgecolor='w'),
+            textprops=textprops)
+
+        ax[r, jj].pie(
+            pd.DataFrame(
+                patient_data.loc[patient_data[tab_name] > 0, cat].value_counts()).sort_index()[cat],
+            radius=1 - 0.4,
+            labels=cat_features_inpattern, colors=inner_colors, wedgeprops=dict(width=0.4, edgecolor='w'),
+            textprops=textprops)
+
+        ax[r, jj].set_title(cat)
+        ax[r, jj].title.set_size(10)
+
+        jj += 1
+        if jj > 5:
+            r += 1
+            jj = 1
+
+    return fig, ax
+
+
+def plot_patterns(Patterns_Dictionary, pattern_id, color_act_dict, pattern_attributes, dim):
+    fig, ax = plt.subplots(dim[0], dim[1], figsize=((dim[1] + 1) * 4, dim[0] * 4))
     # fig = figure(figsize=[8, 8])
     # ax = fig.add_subplot()
 
@@ -406,9 +467,9 @@ def plot_patterns(Patterns_Dictionary, pattern_id, color_act_dict, pattern_attri
     nx.draw_networkx_nodes(Patterns_Dictionary[pattern_id]['pattern'], pos,
                            node_color=colors, node_size=sizes, ax=ax[0][0])
 
-    text = nx.draw_networkx_labels(Patterns_Dictionary[pattern_id]['pattern'], pos, values, ax=ax[0][0])
-    for _, t in text.items():
-        t.set_rotation('vertical')
+    # text = nx.draw_networkx_labels(Patterns_Dictionary[pattern_id]['pattern'], pos, values, ax=ax[0][0])
+    # for _, t in text.items():
+    #     t.set_rotation('vertical')
 
     nx.draw_networkx_edges(Patterns_Dictionary[pattern_id]['pattern'], pos, arrows=True,
                            width=2, edge_color=edge_styles, ax=ax[0][0])
@@ -416,19 +477,21 @@ def plot_patterns(Patterns_Dictionary, pattern_id, color_act_dict, pattern_attri
     plt.title('Pattern ID: ' + str(pattern_id))
     plt.axis('off')
 
-    # # place a text box in upper left in axes coord
-
     for v in np.unique(nodes_values):
         if v in ['start', 'end']:
             continue
-        plt.scatter([], [], c=color_act_dict[v], label=v)
+        ax[0][0].scatter([], [], c=color_act_dict[v], label=v)
+
+    ax[0][0].legend(loc='lower left', prop={'size': 12})
+    ax[0][0].axis('off')
 
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.2)
     plt.text(0.05, 0.9, info_text, fontsize=12,
              verticalalignment='top', bbox=props, transform=ax[1][0].transAxes)
 
-    # plt.legend(loc='lower left')
     ax[1][0].axis('off')
+    if dim[0] > 2:
+        ax[2][0].axis('off')
 
     return fig, ax
 
