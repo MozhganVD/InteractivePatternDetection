@@ -30,8 +30,9 @@ Install dependencies (Python 3.8.0) :
 1. Run ```GUI_IMPresseD_tool.py```, then save the settings and check desired interest functions as in the interactive mode.
 2. Click ```Automatic Pattern Disocvery``` button to initiate the tool in automatic mod.
 3. In this mode, users specify the maximum number of iterations and initiate the pattern discovery process by clicking the designated button.
-This mode is optimized to uncover all relevant patterns for prediction purposes. the output of this mode is two test and train set containing the encoded discovered patterns.
-During the pattern discovery procedure, we only considered the training set to prevent potential bias or information leakage in the evaluation.
+This mode is optimized to uncover all relevant patterns for prediction purposes. The output of this mode is two test and train set containing the encoded discovered patterns and all discovered patterns in ```.json``` format.
+
+Note: During the pattern discovery procedure, we only considered the training set to prevent potential bias or information leakage in the evaluation.
 
 ![IMAGE](pic/Auto_setting.PNG)
 

@@ -702,7 +702,6 @@ class GUI_IMOPD_IKNL_tool:
             scrollbarx = tk.Scrollbar(tab, orient=tk.HORIZONTAL)
             scrollbarx.pack(side=tk.BOTTOM, fill=tk.X)
 
-
             # Create a canvas with a scroll region
             canvas = tk.Canvas(tab)
             canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
@@ -737,7 +736,6 @@ class GUI_IMOPD_IKNL_tool:
 
     def scroll(self, event, canvas):
         canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-
 
     def copy_to_clipboard(self, event, tree):
         # get the selected row and column
@@ -1006,18 +1004,30 @@ class GUI_IMOPD_IKNL_tool:
         test_data_percentage = float(test_data_percentage)
 
         self.patient_data = self.create_patient_data()
+        selected_variants = VariantSelection(self.df, self.case_id, self.activity, self.timestamp)
+        counter = 1
+        for case in selected_variants["case:concept:name"].unique():
+            counter += 1
+            Other_cases = \
+                selected_variants.loc[selected_variants["case:concept:name"] == case, 'case:CaseIDs'].tolist()[0]
+            trace = self.df.loc[self.df[self.case_id] == case, self.activity].tolist()
+            for act in np.unique(trace):
+                Number_of_act = trace.count(act)
+                for Ocase in Other_cases:
+                    self.patient_data.loc[self.patient_data[self.case_id] == Ocase, act] = Number_of_act
+
         d_time = self.delta_time_entry.get()
         d_time = float(d_time)
         pairwise_distances_array, pair_cases, start_search_points = self.creat_pairwise_distance()
 
-        train_X, test_X, All_extended_patterns = AutoStepWise_PPD(Max_extension_step, Max_gap_between_events,
-                                                                  test_data_percentage, self.df, self.patient_data,
-                                                                  pairwise_distances_array, pair_cases,
-                                                                  start_search_points, self.case_id,
-                                                                  self.activity, self.outcome, self.outcome_type,
-                                                                  self.timestamp,
-                                                                  self.pareto_features, self.pareto_sense, d_time,
-                                                                  self.color_act_dict)
+        train_X, test_X = AutoStepWise_PPD(Max_extension_step, Max_gap_between_events,
+                                           test_data_percentage, self.df, self.patient_data,
+                                           pairwise_distances_array, pair_cases,
+                                           start_search_points, self.case_id,
+                                           self.activity, self.outcome, self.outcome_type,
+                                           self.timestamp,
+                                           self.pareto_features, self.pareto_sense, d_time,
+                                           self.color_act_dict, self.saving_directory)
 
         # save the results
         train_X.to_csv(self.saving_directory + "/training_encoded_log.csv", index=False)
