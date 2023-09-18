@@ -321,7 +321,7 @@ class GUI_IMOPD_IKNL_tool:
             # create a frame for visualization options
             self.visualization_frame = tk.Frame(self.master)
             self.visualization_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
-            self.visualization_label = tk.Label(self.visualization_frame, text="Visualization row number:")
+            self.visualization_label = tk.Label(self.visualization_frame, text="Visualization row number (min. 2):")
             self.visualization_label.pack(side=tk.LEFT, padx=10, pady=10)
             self.visualization_row_entry = tk.Entry(self.visualization_frame, width=10)
             self.visualization_row_entry.pack(side=tk.LEFT, padx=10, pady=10)
