@@ -95,7 +95,7 @@ class GUI_IMOPD_IKNL_tool:
         self.select_numerical_button.pack(side=tk.LEFT, padx=10, pady=10)
 
         # create a button for starting the detection
-        self.save_setting_button = tk.Button(button_frame, text="Save Setting", command=self.save_setting)
+        self.save_setting_button = tk.Button(button_frame, text="Save Attributes", command=self.save_setting)
         self.save_setting_button.pack(side=tk.LEFT, padx=10, pady=10)
         self.save_setting_button.config(state=tk.DISABLED)
 
