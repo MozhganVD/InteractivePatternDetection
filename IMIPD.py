@@ -35,9 +35,7 @@ def VariantSelection(main_data, case_id, activities, timestamp):
 
 
 def similarity_measuring_patterns(patterns_data, patient_data, pair_cases, start_search_points,
-                                  pairwise_distances_array, Core_activity=False):
-    # if Core_activity is not None:
-    #     patient_data = patient_data[patient_data[Core_activity] != 0]
+                                  pairwise_distances_array):
 
     for pattern in patterns_data['patterns']:
         in_pattern_cases = patient_data[patient_data[pattern] > 0].index
@@ -63,9 +61,7 @@ def similarity_measuring_patterns(patterns_data, patient_data, pair_cases, start
     return patterns_data
 
 
-def predictive_measuring_patterns(patterns_data, patient_data, label_class, Core_activity, outcome_type):
-    # if Core_activity is not None:
-    #     patient_data = patient_data[patient_data[Core_activity] != 0]
+def predictive_measuring_patterns(patterns_data, patient_data, label_class, outcome_type):
 
     if outcome_type == 'binary':
         x = patient_data[patterns_data['patterns']]
@@ -78,13 +74,6 @@ def predictive_measuring_patterns(patterns_data, patient_data, label_class, Core
         for pattern in patterns_data['patterns']:
             cat_y_all = patient_data[label_class]
             x = patient_data[pattern]
-            # cat_y = list(patient_data.loc[patient_data[pattern] > 0, label_class])
-            # cat_y_out = list(patient_data.loc[patient_data[pattern] == 0, label_class])
-
-            # patterns_data.loc[patterns_data['patterns'] == pattern,
-            #                   "PositiveOutcome_rate_pattern"] = np.sum(cat_y) / len(cat_y)
-            # patterns_data.loc[patterns_data['patterns'] == pattern,
-            #                   "PositiveOutcome_rate_anti-pattern"] = np.sum(cat_y_out) / len(cat_y_out)
 
             cor, _ = spearmanr(cat_y_all, x)
             if np.isnan(cor):
@@ -102,19 +91,7 @@ def predictive_measuring_patterns(patterns_data, patient_data, label_class, Core
     return patterns_data
 
 
-# def frequency_measuring_patterns(patterns_data, pattern_list, patient_data, Core_activity):
-#     for pattern in pattern_list:
-#         patterns_data.loc[patterns_data['patterns'] == pattern, 'Pattern_Frequency'] \
-#             = np.sum(patient_data[pattern])
-#
-#         patterns_data.loc[patterns_data['patterns'] == pattern, 'Case_Support'] = \
-#             np.count_nonzero(patient_data[pattern])
-#
-#         patterns_data.loc[patterns_data['patterns'] == pattern, 'Frequency_Interest'] = \
-#             np.count_nonzero(patient_data[pattern]) / len(patient_data)
-#
-#     return patterns_data
-def frequency_measuring_patterns(patterns_data, pattern_list, patient_data, Core_activity):
+def frequency_measuring_patterns(patterns_data, pattern_list, patient_data):
     pattern_indices = patterns_data.set_index('patterns').index
     for pattern in pattern_list:
         pattern_index = pattern_indices.get_loc(pattern)
@@ -129,7 +106,6 @@ def frequency_measuring_patterns(patterns_data, pattern_list, patient_data, Core
 
     return patterns_data
 
-
 def create_pattern_frame(pattern_list):
     patterns_data = pd.DataFrame(columns=pattern_list)
     patterns_data = patterns_data.transpose()
@@ -138,20 +114,20 @@ def create_pattern_frame(pattern_list):
     return patterns_data
 
 
-def create_pattern_attributes(patient_data, label_class, Core_activity, pattern_list,
+def create_pattern_attributes(patient_data, label_class, pattern_list,
                               pairwise_distances_array, pair_cases, start_search_points, outcome_type):
     patterns_data = create_pattern_frame(pattern_list)
     ## Frequency-based measures
-    patterns_data = frequency_measuring_patterns(patterns_data, pattern_list, patient_data, Core_activity)
+    patterns_data = frequency_measuring_patterns(patterns_data, pattern_list, patient_data)
     print('frequency measures done')
 
     ## Discriminative measures
-    patterns_data = predictive_measuring_patterns(patterns_data, patient_data, label_class, Core_activity, outcome_type)
+    patterns_data = predictive_measuring_patterns(patterns_data, patient_data, label_class, outcome_type)
     print('predictive measures done')
 
     ## Similarity measures
     patterns_data = similarity_measuring_patterns(patterns_data, patient_data, pair_cases, start_search_points,
-                                                  pairwise_distances_array, Core_activity)
+                                                  pairwise_distances_array)
     print('similarity measures done')
 
     return patterns_data
@@ -281,20 +257,18 @@ def Pattern_extension(case_data, Trace_graph, Core_activity, case_id, Patterns_D
     return Patterns_Dictionary
 
 
-def Trace_graph_generator(selected_variants, patient_data, Core_activity, delta_time,
+def Trace_graph_generator(df, delta_time,
                           Case_ID, color_act_dict,
                           case_column, activity_column, timestamp):
     Trace_graph = nx.DiGraph()
-    case_data = selected_variants[selected_variants[case_column] == Case_ID]
+    case_data = df[df[case_column] == Case_ID]
 
     for i, treatments in enumerate(case_data[activity_column]):
         Trace_graph.add_node(i, value=treatments, parallel=False, color=color_act_dict[treatments])
 
-    trace = selected_variants.loc[selected_variants[case_column] == Case_ID, activity_column].tolist()
-    # Number_of_core = trace.count(Core_activity)
-    # patient_data.loc[patient_data[case_column] == Case_ID, Core_activity] = Number_of_core
+    trace = df.loc[df[case_column] == Case_ID, activity_column].tolist()
 
-    start_times = selected_variants.loc[selected_variants[case_column] == Case_ID, timestamp].tolist()
+    start_times = df.loc[df[case_column] == Case_ID, timestamp].tolist()
     parallel_indexes = {0: set()}
     max_key = max(parallel_indexes.keys())
     parallel = False
@@ -561,16 +535,15 @@ def defining_graph_pos(G):
 
 
 def Single_Pattern_Extender(all_extension_list, chosen_pattern_ID,
-                            patient_data, EventLog_graphs, all_variants):
+                            patient_data, EventLog_graphs, df, activity, case_id):
     # Extension_3_patterns = []
     Extended_patterns_at_stage = dict()
     # for chosen_pattern_ID in All_extended_patterns_2:
     new_patterns_for_core = []
     Core_activity = chosen_pattern_ID.split("_")[0]
     print('Core:  ' + Core_activity)
-    selected_variants = all_variants[Core_activity]
-    # if any(nx.get_edge_attributes(All_extended_patterns_2[chosen_pattern_ID]['pattern'], 'eventually').values()):
-    #     return None, None, None
+    filtered_cases = df.loc[df[activity] == Core_activity, case_id]
+    filtered_main_data = df[df[case_id].isin(filtered_cases)]
     print(chosen_pattern_ID)
     for idx, case in enumerate(all_extension_list[chosen_pattern_ID]['Instances']['case']):
         Trace_graph = EventLog_graphs[case].copy()
@@ -584,7 +557,7 @@ def Single_Pattern_Extender(all_extension_list, chosen_pattern_ID,
         ending_nodes = {n[0] for n in chosen_pattern.out_degree if n[1] == 0}
         starting_nodes = {n[0] for n in chosen_pattern.in_degree if n[1] == 0}
 
-        case_data = selected_variants[selected_variants['case:concept:name'] == case]
+        case_data = filtered_main_data[filtered_main_data[case_id] == case]
         values = nx.get_node_attributes(Trace_graph, 'value')
         parallel = nx.get_node_attributes(Trace_graph, 'parallel')
         color = nx.get_node_attributes(Trace_graph, 'color')
@@ -609,7 +582,7 @@ def Single_Pattern_Extender(all_extension_list, chosen_pattern_ID,
             Extended_patterns_at_stage, new_Pattern_IDs = update_pattern_dict(Extended_patterns_at_stage,
                                                                               extended_pattern,
                                                                               new_embedded_trace_graph,
-                                                                              case_data, 'case:concept:name', nm,
+                                                                              case_data, case_id, nm,
                                                                               em,
                                                                               chosen_pattern_ID,
                                                                               new_patterns_for_core)
@@ -633,7 +606,7 @@ def Single_Pattern_Extender(all_extension_list, chosen_pattern_ID,
             Extended_patterns_at_stage, new_Pattern_IDs = update_pattern_dict(Extended_patterns_at_stage,
                                                                               extended_pattern,
                                                                               new_embedded_trace_graph,
-                                                                              case_data, 'case:concept:name', nm,
+                                                                              case_data, case_id, nm,
                                                                               em,
                                                                               chosen_pattern_ID,
                                                                               new_patterns_for_core)
@@ -659,7 +632,7 @@ def Single_Pattern_Extender(all_extension_list, chosen_pattern_ID,
 
                 Extended_patterns_at_stage, new_Pattern_IDs = update_pattern_dict(Extended_patterns_at_stage,
                                                                                   Eventual_follow_pattern, [],
-                                                                                  case_data, 'case:concept:name',
+                                                                                  case_data, case_id,
                                                                                   nm, em,
                                                                                   chosen_pattern_ID,
                                                                                   new_patterns_for_core)
@@ -680,32 +653,20 @@ def Single_Pattern_Extender(all_extension_list, chosen_pattern_ID,
 
                 Extended_patterns_at_stage, new_Pattern_IDs = update_pattern_dict(Extended_patterns_at_stage,
                                                                                   Eventual_preceding_pattern, [],
-                                                                                  case_data, 'case:concept:name',
+                                                                                  case_data, case_id,
                                                                                   nm, em,
                                                                                   chosen_pattern_ID,
                                                                                   new_patterns_for_core)
                 if new_Pattern_IDs != "":
                     new_patterns_for_core.append(new_Pattern_IDs)
 
-        # Extension_3_patterns.extend(new_patterns_for_core)
         if len(new_patterns_for_core) > 0:
-
-            # Extended_patterns_at_stage[chosen_pattern_ID] = dict()
-            # Extended_patterns_at_stage[chosen_pattern_ID]['dict'] = Extended_pattern_dictionary
-            # Extended_patterns_at_stage[chosen_pattern_ID]['Egraph'] = EventLog_graphs
-            # Extended_patterns_at_stage[chosen_pattern_ID]['variants'] = selected_variants
-
             patient_data[new_patterns_for_core] = 0
             for PID in new_patterns_for_core:
                 for CaseID in np.unique(Extended_patterns_at_stage[PID]['Instances']['case']):
                     variant_frequency_case = Extended_patterns_at_stage[PID]['Instances']['case'].count(CaseID)
-                    Other_cases = \
-                        selected_variants.loc[
-                            selected_variants['case:concept:name'] == CaseID, 'case:CaseIDs'].tolist()[
-                            0]
-                    for Ocase in Other_cases:
-                        patient_data.loc[
-                            patient_data['case:concept:name'] == Ocase, PID] = variant_frequency_case
+                    patient_data.loc[
+                        patient_data['case:concept:name'] == CaseID, PID] = variant_frequency_case
 
     all_extension_list.update(Extended_patterns_at_stage)
     return all_extension_list, Extended_patterns_at_stage, patient_data

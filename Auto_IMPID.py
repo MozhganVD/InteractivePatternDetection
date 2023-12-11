@@ -1,17 +1,12 @@
 from paretoset import paretoset
-import pandas as pd
 import networkx as nx
 from networkx.readwrite import json_graph
 import json
-import pm4py
-import pickle
 import numpy as np
 import networkx.algorithms.isomorphism as iso
-from pm4py.algo.filtering.log.variants import variants_filter
-from pm4py.objects.log.obj import EventLog
 from sklearn.model_selection import train_test_split
-from IMIPD import VariantSelection, create_pattern_attributes
-from tools import create_embedded_pattern_in_trace, Trace_graph_generator, update_pattern_dict, Pattern_Extender
+from IMIPD import create_pattern_attributes, Trace_graph_generator
+from tools import create_embedded_pattern_in_trace, update_pattern_dict, Pattern_Extender
 
 
 def AutoStepWise_PPD(Max_extension_step, Max_gap_between_events, test_data_percentage, data, patient_data,
@@ -36,17 +31,8 @@ def AutoStepWise_PPD(Max_extension_step, Max_gap_between_events, test_data_perce
     train_data = patient_data[patient_data[case_id].isin(train_ids)]
     test_data = patient_data[patient_data[case_id].isin(test_ids)]
 
-    selected_variants = VariantSelection(data, case_id, activity, timestamp)
-    for case in selected_variants[case_id].unique():
-        Other_cases = selected_variants.loc[selected_variants[case_id] == case, 'case:CaseIDs'].tolist()[0]
-        trace = data.loc[data[case_id] == case, activity].tolist()
-        for act in np.unique(trace):
-            Number_of_act = trace.count(act)
-            for Ocase in Other_cases:
-                patient_data.loc[patient_data[case_id] == Ocase, act] = Number_of_act
-
     All_extended_patterns = []
-    activity_attributes = create_pattern_attributes(train_data, outcome, None,
+    activity_attributes = create_pattern_attributes(train_data, outcome,
                                                     list(data[activity].unique()),
                                                     pairwise_distances_array, pair_cases,
                                                     start_search_points, outcome_type)
@@ -66,21 +52,15 @@ def AutoStepWise_PPD(Max_extension_step, Max_gap_between_events, test_data_perce
     Extended_patterns_at_stage = dict()
     All_extended_patterns_1_list = []
     EventLog_graphs = dict()
-    all_variants = dict()
     for Core_activity in All_extended_patterns:
-        timestamp = 'Complete Timestamp'
         filtered_cases = data.loc[data[activity] == Core_activity, case_id]
         filtered_main_data = data[data[case_id].isin(filtered_cases)]
-        # Keep only variants and its frequency
-        selected_variants = VariantSelection(filtered_main_data, case_id, activity, timestamp)
-        all_variants[Core_activity] = selected_variants
-        timestamp = 'time:timestamp'
         new_patterns_for_core = []
-        for case in selected_variants[case_id].unique():
-            case_data = selected_variants[selected_variants[case_id] == case]
+        for case in filtered_main_data[case_id].unique():
+            case_data = filtered_main_data[filtered_main_data[case_id] == case]
 
             if case not in EventLog_graphs.keys():
-                Trace_graph = Trace_graph_generator(selected_variants, patient_data, Core_activity, d_time,
+                Trace_graph = Trace_graph_generator(filtered_main_data, d_time,
                                                     case, color_act_dict, case_id, activity, timestamp)
 
                 EventLog_graphs[case] = Trace_graph.copy()
@@ -209,14 +189,12 @@ def AutoStepWise_PPD(Max_extension_step, Max_gap_between_events, test_data_perce
         for PID in new_patterns_for_core:
             for CaseID in np.unique(Extended_patterns_at_stage[PID]['Instances']['case']):
                 variant_frequency_case = Extended_patterns_at_stage[PID]['Instances']['case'].count(CaseID)
-                Other_cases = selected_variants.loc[selected_variants[case_id] == CaseID, 'case:CaseIDs'].tolist()[0]
-                for Ocase in Other_cases:
-                    patient_data.loc[patient_data[case_id] == Ocase, PID] = variant_frequency_case
+                patient_data.loc[patient_data[case_id] == CaseID, PID] = variant_frequency_case
 
     new_train_data = patient_data[patient_data[case_id].isin(train_data[case_id])]
     new_test_data = patient_data[patient_data[case_id].isin(test_data[case_id])]
 
-    pattern_attributes = create_pattern_attributes(new_train_data, outcome, None,
+    pattern_attributes = create_pattern_attributes(new_train_data, outcome,
                                                    All_extended_patterns_1_list,
                                                    pairwise_distances_array, pair_cases, start_search_points,
                                                    outcome_type)
@@ -243,12 +221,12 @@ def AutoStepWise_PPD(Max_extension_step, Max_gap_between_events, test_data_perce
     for ext in range(1, Max_extension_step):
         print("extension number %s " % (ext + 1))
         Extension_2_patterns_list, Extended_patterns_at_stage, patient_data = \
-            Pattern_Extender(Extended_patterns_at_stage, patient_data, EventLog_graphs, all_variants)
+            Pattern_Extender(Extended_patterns_at_stage, patient_data, EventLog_graphs, data, case_id, activity)
 
         train_patient_data = patient_data[patient_data[case_id].isin(train_data[case_id])]
         test_patient_data = patient_data[patient_data[case_id].isin(test_data[case_id])]
 
-        pattern_attributes = create_pattern_attributes(train_patient_data, outcome, None,
+        pattern_attributes = create_pattern_attributes(train_patient_data, outcome,
                                                        Extension_2_patterns_list,
                                                        pairwise_distances_array, pair_cases, start_search_points,
                                                        outcome_type)

@@ -9,13 +9,10 @@ import os
 import networkx as nx
 import numpy as np
 import pandas as pd
-import pm4py
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from paretoset import paretoset
 import pyperclip
-from pm4py.algo.filtering.log.variants import variants_filter
-from pm4py.objects.log.obj import EventLog
 from Auto_IMPID import AutoStepWise_PPD
 from IMIPD import VariantSelection, create_pattern_attributes, calculate_pairwise_case_distance, Trace_graph_generator, \
     Pattern_extension, plot_patterns, Single_Pattern_Extender, plot_dashboard
@@ -465,7 +462,7 @@ class GUI_IMOPD_IKNL_tool:
             self.pareto_features.append('Case_Distance_Interest')
             self.pareto_sense.append(self.direction_distance_function.get())
 
-        activity_attributes = create_pattern_attributes(self.patient_data, self.outcome, None,
+        activity_attributes = create_pattern_attributes(self.patient_data, self.outcome,
                                                         list(self.df[self.activity].unique()),
                                                         self.pairwise_distances_array, self.pair_cases,
                                                         self.start_search_points, self.outcome_type)
@@ -595,34 +592,34 @@ class GUI_IMOPD_IKNL_tool:
 
         filtered_cases = self.df.loc[self.df[self.activity] == Core_activity, self.case_id]
         filtered_main_data = self.df[self.df[self.case_id].isin(filtered_cases)]
-        # Keep only variants and its frequency
-        timestamp = self.timestamp
-        filtered_main_data = pm4py.format_dataframe(filtered_main_data, case_id=self.case_id,
-                                                    activity_key=self.activity,
-                                                    timestamp_key=timestamp)
-        filtered_main_log = pm4py.convert_to_event_log(filtered_main_data)
-        variants = variants_filter.get_variants(filtered_main_log)
-        pp_log = EventLog()
-        pp_log._attributes = filtered_main_log.attributes
-        for i, k in enumerate(variants):
-            variants[k][0].attributes['VariantFrequency'] = len(variants[k])
-            Case_ids = []
-
-            for trace in variants[k]:
-                Case_ids.append(trace.attributes['concept:name'])
-
-            variants[k][0].attributes['CaseIDs'] = Case_ids
-            pp_log.append(variants[k][0])
-
-        selected_variants = pm4py.convert_to_dataframe(pp_log)
-        self.all_variants[Core_activity] = selected_variants
-        timestamp = 'time:timestamp'
-        for case in selected_variants[self.case_id].unique():
-            case_data = selected_variants[selected_variants[self.case_id] == case]
+        # # Keep only variants and its frequency
+        # timestamp = self.timestamp
+        # filtered_main_data = pm4py.format_dataframe(filtered_main_data, case_id=self.case_id,
+        #                                             activity_key=self.activity,
+        #                                             timestamp_key=timestamp)
+        # filtered_main_log = pm4py.convert_to_event_log(filtered_main_data)
+        # variants = variants_filter.get_variants(filtered_main_log)
+        # pp_log = EventLog()
+        # pp_log._attributes = filtered_main_log.attributes
+        # for i, k in enumerate(variants):
+        #     variants[k][0].attributes['VariantFrequency'] = len(variants[k])
+        #     Case_ids = []
+        #
+        #     for trace in variants[k]:
+        #         Case_ids.append(trace.attributes['concept:name'])
+        #
+        #     variants[k][0].attributes['CaseIDs'] = Case_ids
+        #     pp_log.append(variants[k][0])
+        #
+        # selected_variants = pm4py.convert_to_dataframe(pp_log)
+        # self.all_variants[Core_activity] = selected_variants
+        # timestamp = 'time:timestamp'
+        for case in filtered_main_data[self.case_id].unique():
+            case_data = filtered_main_data[filtered_main_data[self.case_id] == case]
             if case not in self.EventLog_graphs.keys():
-                Trace_graph = Trace_graph_generator(selected_variants, self.patient_data, Core_activity, d_time,
+                Trace_graph = Trace_graph_generator(filtered_main_data, d_time,
                                                     case, self.color_act_dict,
-                                                    self.case_id, self.activity, timestamp)
+                                                    self.case_id, self.activity, self.timestamp)
 
                 self.EventLog_graphs[case] = Trace_graph.copy()
             else:
@@ -635,14 +632,14 @@ class GUI_IMOPD_IKNL_tool:
         for PID in self.Patterns_Dictionary:
             for CaseID in np.unique(self.Patterns_Dictionary[PID]['Instances']['case']):
                 variant_frequency_case = self.Patterns_Dictionary[PID]['Instances']['case'].count(CaseID)
-                Other_cases = \
-                    selected_variants.loc[selected_variants[self.case_id] == CaseID, 'case:CaseIDs'].tolist()[
-                        0]
-                for Ocase in Other_cases:
-                    self.patient_data.loc[self.patient_data[self.case_id] == Ocase, PID] = variant_frequency_case
+                # Other_cases = \
+                #     filtered_main_data.loc[filtered_main_data[self.case_id] == CaseID, 'case:CaseIDs'].tolist()[
+                #         0]
+                # for Ocase in Other_cases:
+                self.patient_data.loc[self.patient_data[self.case_id] == CaseID, PID] = variant_frequency_case
 
         pattern_attributes = create_pattern_attributes(self.patient_data, self.outcome,
-                                                       Core_activity, list(self.Patterns_Dictionary.keys()),
+                                                       list(self.Patterns_Dictionary.keys()),
                                                        self.pairwise_distances_array, self.pair_cases,
                                                        self.start_search_points, self.outcome_type)
 
@@ -655,7 +652,7 @@ class GUI_IMOPD_IKNL_tool:
 
         self.All_Pareto_front[Core_activity] = dict()
         self.All_Pareto_front[Core_activity]['dict'] = self.Patterns_Dictionary
-        self.All_Pareto_front[Core_activity]['variants'] = selected_variants
+        # self.All_Pareto_front[Core_activity]['variants'] = selected_variants
         self.all_pattern_dictionary.update(self.Patterns_Dictionary)
 
         fig = plt.figure(figsize=(10, 10))
@@ -825,13 +822,13 @@ class GUI_IMOPD_IKNL_tool:
             self.all_extended_patterns,
             Core_pattern,
             self.patient_data, self.EventLog_graphs,
-            self.all_variants)
+            self.df, self.activity, self.case_id)
 
         result_dict = {'K': [], 'N': [], 'Pareto': [], 'All': []}
         for obj in self.pareto_features:
             result_dict[obj] = []
         pattern_attributes = create_pattern_attributes(self.patient_data, self.outcome,
-                                                       Core_pattern, list(self.Patterns_Dictionary.keys()),
+                                                       list(self.Patterns_Dictionary.keys()),
                                                        self.pairwise_distances_array, self.pair_cases,
                                                        self.start_search_points, self.outcome_type)
         Objectives_attributes = pattern_attributes[self.pareto_features]
