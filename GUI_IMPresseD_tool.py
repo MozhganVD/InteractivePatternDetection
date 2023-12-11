@@ -80,6 +80,13 @@ class GUI_IMOPD_IKNL_tool:
         self.delta_time_label.pack(side=tk.LEFT, padx=10, pady=10)
         self.delta_time_entry = tk.Entry(time_frame)
         self.delta_time_entry.pack(side=tk.LEFT, padx=10, pady=10)
+        # create an entry widget for getting the maximum gap between events
+        eventual_frame = tk.Frame(self.master)
+        eventual_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        eventual_label = tk.Label(eventual_frame, text="Max gap between events: ")
+        eventual_label.pack(side=tk.LEFT, padx=10, pady=10)
+        self.eventual_holder = tk.Entry(eventual_frame, width=5)
+        self.eventual_holder.pack(side=tk.LEFT, padx=10, pady=10)
 
         # create a frame for buttons
         button_frame = tk.Frame(self.master)
@@ -197,21 +204,6 @@ class GUI_IMOPD_IKNL_tool:
         self.timestamp_combobox.config(values=Options)
         self.outcome_combobox.config(values=Options)
         self.outcome_type_combobox.config(values=['binary', 'numerical'])
-        # # clear menu for numerical attributes
-        # self.menu_num.delete(0, tk.END)
-        # self.menu.delete(0, tk.END)
-        #
-        # self.choices = {}
-        # for choice in list(df.columns):
-        #     self.choices[choice] = tk.IntVar(value=0)
-        #     self.menu.add_checkbutton(label=choice, variable=self.choices[choice],
-        #                               onvalue=1, offvalue=0, indicatoron=True)
-        #
-        # self.choices_num = {}
-        # for choice in list(df.columns):
-        #     self.choices_num[choice] = tk.IntVar(value=0)
-        #     self.menu_num.add_checkbutton(label=choice, variable=self.choices_num[choice],
-        #                                   onvalue=1, offvalue=0, indicatoron=True)
         self.select_categorical_button.config(state="normal")
         self.select_numerical_button.config(state="normal")
 
@@ -228,9 +220,12 @@ class GUI_IMOPD_IKNL_tool:
         self.outcome = self.outcome_combobox.get()
         self.outcome_type = self.outcome_type_combobox.get()
         self.delta_time = self.delta_time_entry.get()
+        self.Max_gap_between_events = self.eventual_holder.get()
+        self.Max_gap_between_events = int(self.Max_gap_between_events)
 
         # check if all comboboxes are filled
-        if self.case_id and self.activity and self.timestamp and self.outcome and self.delta_time and self.outcome_type:
+        if self.case_id and self.activity and self.timestamp and self.outcome and self.delta_time\
+                and self.outcome_type and self.Max_gap_between_events:
             # set the right format for the dataframe columns
             self.df[self.activity] = self.df[self.activity].str.replace("_", "-")
             self.df[self.timestamp] = pd.to_datetime(self.df[self.timestamp])
@@ -248,13 +243,6 @@ class GUI_IMOPD_IKNL_tool:
             self.color_act_dict['start'] = 'k'
             self.color_act_dict['end'] = 'k'
 
-            # for name, var in self.choices.items():
-            #     if var.get() == 1:
-            #         self.categorical_attributes.append(name)
-            # for name, var in self.choices_num.items():
-            #     if var.get() == 1:
-            #         self.numerical_attributes.append(name)
-
             # create a button for starting the detection
             self.auto_detection_button = tk.Button(self.master, text="Automatic Pattern Discovery",
                                                    command=self.Automatic_detection)
@@ -268,10 +256,6 @@ class GUI_IMOPD_IKNL_tool:
             self.interest_function_frame = tk.Frame(self.master)
             self.interest_function_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
             self.correlation_function = tk.IntVar()
-            # set a text box for the correlation function
-            # self.interest_function_label_1 = tk.Label(self.interest_function_frame,
-            #                                             text="Correlation interest function")
-            # self.interest_function_label_1.pack(side=tk.LEFT, padx=10, pady=10)
             self.interest_function_checkbox_1 = tk.Checkbutton(self.interest_function_frame,
                                                                text="Correlation interest function",
                                                                variable=self.correlation_function)
@@ -286,9 +270,6 @@ class GUI_IMOPD_IKNL_tool:
             self.interest_function_frame_2 = tk.Frame(self.master)
             self.interest_function_frame_2.pack(side=tk.BOTTOM, padx=10, pady=10)
             self.frequency_function = tk.IntVar()
-            # self.interest_function_label_2 = tk.Label(self.interest_function_frame_2,
-            #                                             text="Frequency interest function")
-            # self.interest_function_label_2.pack(side=tk.LEFT, padx=10, pady=10)
             self.interest_function_checkbox_2 = tk.Checkbutton(self.interest_function_frame_2,
                                                                text="Frequency interest function",
                                                                variable=self.frequency_function)
@@ -303,9 +284,6 @@ class GUI_IMOPD_IKNL_tool:
             self.interest_function_frame_3 = tk.Frame(self.master)
             self.interest_function_frame_3.pack(side=tk.BOTTOM, padx=10, pady=10)
             self.distance_function = tk.IntVar()
-            # self.interest_function_label_3 = tk.Label(self.interest_function_frame_3,
-            #                                             text="Case Distance interest function")
-            # self.interest_function_label_3.pack(side=tk.LEFT, padx=10, pady=10)
             self.interest_function_checkbox_3 = tk.Checkbutton(self.interest_function_frame_3,
                                                                text="Case Distance interest function",
                                                                variable=self.distance_function)
@@ -330,7 +308,8 @@ class GUI_IMOPD_IKNL_tool:
             self.visualization_col_entry.pack(side=tk.LEFT, padx=10, pady=10)
 
         else:
-            messagebox.showerror("Error", "You need to select case id, activity, timestamp and outcome and delta time!")
+            messagebox.showerror("Error", "You need to select case id, activity, timestamp, outcome,"
+                                          " delta time, and max gap between events for eventually relations!")
 
     def start_detection(self):
         if self.correlation_function.get() == 0 and \
@@ -626,16 +605,13 @@ class GUI_IMOPD_IKNL_tool:
                 Trace_graph = self.EventLog_graphs[case].copy()
 
             self.Patterns_Dictionary = Pattern_extension(case_data, Trace_graph, Core_activity,
-                                                         self.case_id, self.Patterns_Dictionary)
+                                                         self.case_id, self.Patterns_Dictionary,
+                                                         self.Max_gap_between_events)
 
         self.patient_data[list(self.Patterns_Dictionary.keys())] = 0
         for PID in self.Patterns_Dictionary:
             for CaseID in np.unique(self.Patterns_Dictionary[PID]['Instances']['case']):
                 variant_frequency_case = self.Patterns_Dictionary[PID]['Instances']['case'].count(CaseID)
-                # Other_cases = \
-                #     filtered_main_data.loc[filtered_main_data[self.case_id] == CaseID, 'case:CaseIDs'].tolist()[
-                #         0]
-                # for Ocase in Other_cases:
                 self.patient_data.loc[self.patient_data[self.case_id] == CaseID, PID] = variant_frequency_case
 
         pattern_attributes = create_pattern_attributes(self.patient_data, self.outcome,
@@ -822,7 +798,7 @@ class GUI_IMOPD_IKNL_tool:
             self.all_extended_patterns,
             Core_pattern,
             self.patient_data, self.EventLog_graphs,
-            self.df, self.activity, self.case_id)
+            self.df, self.Max_gap_between_events, self.activity, self.case_id)
 
         result_dict = {'K': [], 'N': [], 'Pareto': [], 'All': []}
         for obj in self.pareto_features:
@@ -998,8 +974,8 @@ class GUI_IMOPD_IKNL_tool:
         Max_extension_step = text_holder.get()
         Max_extension_step = int(Max_extension_step)
 
-        Max_gap_between_events = eventual_holder.get()
-        Max_gap_between_events = int(Max_gap_between_events)
+        self.Max_gap_between_events = eventual_holder.get()
+        self.Max_gap_between_events = int(self.Max_gap_between_events)
 
         test_data_percentage = test_holder.get()
         test_data_percentage = float(test_data_percentage)
@@ -1021,7 +997,7 @@ class GUI_IMOPD_IKNL_tool:
         d_time = float(d_time)
         pairwise_distances_array, pair_cases, start_search_points = self.creat_pairwise_distance()
 
-        train_X, test_X = AutoStepWise_PPD(Max_extension_step, Max_gap_between_events,
+        train_X, test_X = AutoStepWise_PPD(Max_extension_step, self.Max_gap_between_events,
                                            test_data_percentage, self.df, self.patient_data,
                                            pairwise_distances_array, pair_cases,
                                            start_search_points, self.case_id,
