@@ -1,0 +1,1 @@
+{"directed": true, "multigraph": false, "graph": {}, "nodes": [{"value": "W-Valideren aanvraag", "parallel": true, "color": "#B00D6C", "id": 12}, {"value": "A-CANCELLED", "parallel": true, "color": "#A2780B", "id": 13}, {"value": "O-CANCELLED", "parallel": true, "color": "#261BC0", "id": 14}], "links": []}

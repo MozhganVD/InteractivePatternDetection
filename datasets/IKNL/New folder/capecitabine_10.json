@@ -1,0 +1,1 @@
+{"directed": true, "multigraph": false, "graph": {}, "nodes": [{"value": "capecitabine", "parallel": true, "color": "#10B665", "id": 0}, {"value": "epirubicine", "parallel": true, "color": "#40004F", "id": 1}, {"value": "oxaliplatine", "parallel": true, "color": "#59ED90", "id": 2}], "links": []}

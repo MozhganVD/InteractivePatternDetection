@@ -24,6 +24,8 @@ from IMIPD import VariantSelection, create_pattern_attributes, calculate_pairwis
 class GUI_IMOPD_IKNL_tool:
     def __init__(self, master=None):
         super().__init__()
+        self.numerical_attributes = []
+        self.categorical_attributes = []
         self.master = master
         self.with_categorical = False
         self.with_numerical = False
@@ -238,7 +240,7 @@ class GUI_IMOPD_IKNL_tool:
             self.df[self.case_id] = self.df[self.case_id].astype(str)
             self.df[self.case_id] = self.df[self.case_id].astype(str)
 
-            color_codes = ["#" + ''.join([random.choice('000123456789ABCDEF') for i in range(6)])
+            color_codes = ["#" + ''.join([random.choice('0001123456789ABCDEFABC') for i in range(6)])
                            for j in range(len(self.df[self.activity].unique()))]
 
             self.color_act_dict = dict()
@@ -717,6 +719,7 @@ class GUI_IMOPD_IKNL_tool:
 
             # Add the figure to the frame
             fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+            # plt.savefig('./dashboard_%s_%s.png' % (Core_activity, ticker))
             canvas.draw_figure = FigureCanvasTkAgg(fig, master=frame)
             canvas.draw_figure.get_tk_widget().pack(fill=tk.BOTH, expand=1)
 
@@ -899,6 +902,7 @@ class GUI_IMOPD_IKNL_tool:
 
             # Add the figure to the frame
             fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+            # plt.savefig('./dashboard_%s_%s.png' % (Core_pattern, ticker))
             canvas.draw_figure = FigureCanvasTkAgg(fig, master=frame)
             canvas.draw_figure.get_tk_widget().pack(fill=tk.BOTH, expand=1)
 

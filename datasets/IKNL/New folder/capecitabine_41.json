@@ -1,0 +1,1 @@
+{"directed": true, "multigraph": false, "graph": {}, "nodes": [{"value": "capecitabine", "parallel": true, "color": "#10B665", "id": 0}, {"value": "trastuzumab", "parallel": false, "color": "#F5B814", "id": 2}], "links": [{"eventually": false, "source": 0, "target": 2}]}
