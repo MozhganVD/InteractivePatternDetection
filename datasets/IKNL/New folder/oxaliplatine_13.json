@@ -1,1 +1,0 @@
-{"directed": true, "multigraph": false, "graph": {}, "nodes": [{"value": "oxaliplatine", "parallel": true, "color": "#59ED90", "id": 1}, {"value": "paclitaxel", "parallel": false, "color": "#E03F10", "id": 2}], "links": [{"eventually": false, "source": 1, "target": 2}]}

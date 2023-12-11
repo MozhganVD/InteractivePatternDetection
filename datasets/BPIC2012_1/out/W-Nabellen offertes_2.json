@@ -1,1 +1,0 @@
-{"directed": true, "multigraph": false, "graph": {}, "nodes": [{"value": "W-Nabellen offertes", "parallel": false, "color": "#368330", "id": 9}, {"value": "W-Nabellen offertes", "parallel": false, "color": "#368330", "id": 10}], "links": [{"eventually": false, "source": 9, "target": 10}]}

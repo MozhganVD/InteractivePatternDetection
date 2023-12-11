@@ -1,1 +1,0 @@
-{"directed": true, "multigraph": false, "graph": {}, "nodes": [{"value": "O-SENT-BACK", "parallel": true, "color": "#A1DD71", "id": 16}, {"value": "W-Valideren aanvraag", "parallel": false, "color": "#B00D6C", "id": 18}], "links": [{"eventually": false, "source": 16, "target": 18}]}

@@ -1,1 +1,0 @@
-{"directed": true, "multigraph": false, "graph": {}, "nodes": [{"value": "W-Nabellen offertes", "parallel": true, "color": "#368330", "id": 17}, {"value": "W-Valideren aanvraag", "parallel": false, "color": "#B00D6C", "id": 18}], "links": [{"eventually": false, "source": 17, "target": 18}]}
