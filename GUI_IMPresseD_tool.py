@@ -33,76 +33,76 @@ class GUI_IMOPD_IKNL_tool:
 
         # add file label and button
         frame_file = tk.Frame(self.master)
-        frame_file.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        frame_file.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5, expand=True)
         self.file_label = tk.Label(frame_file, text="No file selected", borderwidth=0.5, relief="solid",
                                    width=100, background="white", anchor="w", padx=5, pady=5, justify="left")
-        self.file_label.pack(side=tk.LEFT, padx=10, pady=10)
+        self.file_label.pack(side=tk.LEFT, padx=10, pady=5, expand=True)
         self.select_file_button = tk.Button(frame_file, text="Select file", command=self.select_file)
-        self.select_file_button.pack(side=tk.LEFT, padx=10, pady=10)
+        self.select_file_button.pack(side=tk.LEFT, padx=10, pady=5)
 
         # create a frame for comboboxes
         self.setting_frame = tk.Frame(self.master)
-        self.setting_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        self.setting_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
 
         # create combobox for selecting the case id column
         self.case_id_label = tk.Label(self.setting_frame, text="Case ID column: ")
-        self.case_id_label.pack(side=tk.LEFT, padx=10, pady=10)
+        self.case_id_label.pack(side=tk.LEFT, padx=10, pady=5)
         self.case_id_combobox = ttk.Combobox(self.setting_frame, state="readonly")
-        self.case_id_combobox.pack(side=tk.LEFT, padx=10, pady=10)
+        self.case_id_combobox.pack(side=tk.LEFT, padx=10, pady=5)
 
         # create combobox for selecting the activity column
         self.activity_label = tk.Label(self.setting_frame, text="Activity column: ")
-        self.activity_label.pack(side=tk.LEFT, padx=10, pady=10)
+        self.activity_label.pack(side=tk.LEFT, padx=10, pady=5)
         self.activity_combobox = ttk.Combobox(self.setting_frame, state="readonly")
-        self.activity_combobox.pack(side=tk.LEFT, padx=10, pady=10)
+        self.activity_combobox.pack(side=tk.LEFT, padx=10, pady=5)
 
         # create frame for outcome settings
         outcome_frame = tk.Frame(self.master)
-        outcome_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        outcome_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
         self.outcome_label = tk.Label(outcome_frame, text="Outcome column: ")
-        self.outcome_label.pack(side=tk.LEFT, padx=10, pady=10)
+        self.outcome_label.pack(side=tk.LEFT, padx=10, pady=5)
         self.outcome_combobox = ttk.Combobox(outcome_frame, state="readonly")
-        self.outcome_combobox.pack(side=tk.LEFT, padx=10, pady=10)
+        self.outcome_combobox.pack(side=tk.LEFT, padx=10, pady=5)
         self.outcome_type_label = tk.Label(outcome_frame, text="Outcome type: ")
-        self.outcome_type_label.pack(side=tk.LEFT, padx=10, pady=10)
+        self.outcome_type_label.pack(side=tk.LEFT, padx=10, pady=5)
         self.outcome_type_combobox = ttk.Combobox(outcome_frame, state="readonly")
-        self.outcome_type_combobox.pack(side=tk.LEFT, padx=10, pady=10)
+        self.outcome_type_combobox.pack(side=tk.LEFT, padx=10, pady=5)
 
         # create a frame for time settings
         time_frame = tk.Frame(self.master)
-        time_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        time_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
         self.timestamp_label = tk.Label(time_frame, text="Timestamp column: ")
-        self.timestamp_label.pack(side=tk.LEFT, padx=10, pady=10)
+        self.timestamp_label.pack(side=tk.LEFT, padx=10, pady=5)
         self.timestamp_combobox = ttk.Combobox(time_frame, state="readonly")
-        self.timestamp_combobox.pack(side=tk.LEFT, padx=10, pady=10)
+        self.timestamp_combobox.pack(side=tk.LEFT, padx=10, pady=5)
         # create a entry widget for getting delta time
         self.delta_time_label = tk.Label(time_frame, text="Delta time (in second): ")
-        self.delta_time_label.pack(side=tk.LEFT, padx=10, pady=10)
+        self.delta_time_label.pack(side=tk.LEFT, padx=10, pady=5)
         self.delta_time_entry = tk.Entry(time_frame)
-        self.delta_time_entry.pack(side=tk.LEFT, padx=10, pady=10)
+        self.delta_time_entry.pack(side=tk.LEFT, padx=10, pady=5)
         # create an entry widget for getting the maximum gap between events
         eventual_frame = tk.Frame(self.master)
-        eventual_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        eventual_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
         eventual_label = tk.Label(eventual_frame, text="Max gap between events: ")
-        eventual_label.pack(side=tk.LEFT, padx=10, pady=10)
+        eventual_label.pack(side=tk.LEFT, padx=10, pady=5)
         self.eventual_holder = tk.Entry(eventual_frame, width=5)
-        self.eventual_holder.pack(side=tk.LEFT, padx=10, pady=10)
+        self.eventual_holder.pack(side=tk.LEFT, padx=10, pady=5)
 
         # create a frame for buttons
         button_frame = tk.Frame(self.master)
-        button_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        button_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
         # create a button for selecting the categorical attributes
         self.select_categorical_button = tk.Button(button_frame, text="Categorical attributes",
                                                    command=self.select_categorical, state=tk.DISABLED)
-        self.select_categorical_button.pack(side=tk.LEFT, padx=10, pady=10)
+        self.select_categorical_button.pack(side=tk.LEFT, padx=10, pady=5)
         # create a button for selecting the numerical attributes
         self.select_numerical_button = tk.Button(button_frame, text="Numerical attributes",
                                                  command=self.select_numerical, state=tk.DISABLED)
-        self.select_numerical_button.pack(side=tk.LEFT, padx=10, pady=10)
+        self.select_numerical_button.pack(side=tk.LEFT, padx=10, pady=5)
 
         # create a button for starting the detection
         self.save_setting_button = tk.Button(button_frame, text="Save Attributes", command=self.save_setting)
-        self.save_setting_button.pack(side=tk.LEFT, padx=10, pady=10)
+        self.save_setting_button.pack(side=tk.LEFT, padx=10, pady=5)
         self.save_setting_button.config(state=tk.DISABLED)
 
         # create a button for starting the detection
@@ -123,7 +123,7 @@ class GUI_IMOPD_IKNL_tool:
         yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         label = tk.Label(window,
                          text="Select the categorical attributes :  ",
-                         padx=10, pady=10)
+                         padx=5, pady=5)
         label.pack(side=tk.TOP)
         self.listbox_cat = tk.Listbox(window, selectmode=tk.MULTIPLE, yscrollcommand=yscrollbar.set)
         self.listbox_cat.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
@@ -142,7 +142,7 @@ class GUI_IMOPD_IKNL_tool:
         yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         label = tk.Label(window,
                          text="Select the numerical attributes :  ",
-                         padx=10, pady=10)
+                         padx=10, pady=5)
         label.pack(side=tk.TOP)
         self.listbox_num = tk.Listbox(window, selectmode=tk.MULTIPLE, yscrollcommand=yscrollbar.set)
         self.listbox_num.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
@@ -176,6 +176,11 @@ class GUI_IMOPD_IKNL_tool:
             # update the file label
             self.file_label.config(text=self.file_path)
             self.df = pd.read_csv(self.file_path)
+
+            # Print information about the DataFrame - added by Sabrina
+            print("DataFrame Info:")
+            print(self.df.info())
+
             self.show_setting()
         else:
             messagebox.showerror("Error", "Please select a csv file")
@@ -246,66 +251,66 @@ class GUI_IMOPD_IKNL_tool:
             # create a button for starting the detection
             self.auto_detection_button = tk.Button(self.master, text="Automatic Pattern Discovery",
                                                    command=self.Automatic_detection)
-            self.auto_detection_button.pack(side=tk.BOTTOM, padx=10, pady=10)
+            self.auto_detection_button.pack(side=tk.BOTTOM, padx=10, pady=5)
 
             self.start_detection_button = tk.Button(self.master, text="Interactive Pattern Discovery",
                                                     command=self.start_detection)
-            self.start_detection_button.pack(side=tk.BOTTOM, padx=10, pady=10)
+            self.start_detection_button.pack(side=tk.BOTTOM, padx=10, pady=5)
 
             # create a checkbox and combo box for three interest functions
             self.interest_function_frame = tk.Frame(self.master)
-            self.interest_function_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
+            self.interest_function_frame.pack(side=tk.BOTTOM, padx=10, pady=5)
             self.correlation_function = tk.IntVar()
             self.interest_function_checkbox_1 = tk.Checkbutton(self.interest_function_frame,
                                                                text="Correlation interest function",
                                                                variable=self.correlation_function)
-            self.interest_function_checkbox_1.pack(side=tk.LEFT, padx=10, pady=10)
+            self.interest_function_checkbox_1.pack(side=tk.LEFT, padx=10, pady=5)
             self.direction_correlation_function = tk.StringVar()
             self.direction_combobox_1 = ttk.Combobox(self.interest_function_frame,
                                                      textvariable=self.direction_correlation_function, state="readonly")
             self.direction_combobox_1['values'] = ("Max", "Min")
-            self.direction_combobox_1.pack(side=tk.RIGHT, padx=10, pady=10)
+            self.direction_combobox_1.pack(side=tk.RIGHT, padx=10, pady=5)
             self.direction_combobox_1.current(0)
 
             self.interest_function_frame_2 = tk.Frame(self.master)
-            self.interest_function_frame_2.pack(side=tk.BOTTOM, padx=10, pady=10)
+            self.interest_function_frame_2.pack(side=tk.BOTTOM, padx=10, pady=5)
             self.frequency_function = tk.IntVar()
             self.interest_function_checkbox_2 = tk.Checkbutton(self.interest_function_frame_2,
                                                                text="Frequency interest function",
                                                                variable=self.frequency_function)
-            self.interest_function_checkbox_2.pack(side=tk.LEFT, padx=10, pady=10)
+            self.interest_function_checkbox_2.pack(side=tk.LEFT, padx=10, pady=5)
             self.direction_frequency_function = tk.StringVar()
             self.direction_combobox_2 = ttk.Combobox(self.interest_function_frame_2,
                                                      textvariable=self.direction_frequency_function, state="readonly")
             self.direction_combobox_2['values'] = ("Max", "Min")
-            self.direction_combobox_2.pack(side=tk.RIGHT, padx=10, pady=10)
+            self.direction_combobox_2.pack(side=tk.RIGHT, padx=10, pady=5)
             self.direction_combobox_2.current(0)
 
             self.interest_function_frame_3 = tk.Frame(self.master)
-            self.interest_function_frame_3.pack(side=tk.BOTTOM, padx=10, pady=10)
+            self.interest_function_frame_3.pack(side=tk.BOTTOM, padx=10, pady=5)
             self.distance_function = tk.IntVar()
             self.interest_function_checkbox_3 = tk.Checkbutton(self.interest_function_frame_3,
                                                                text="Case Distance interest function",
                                                                variable=self.distance_function)
-            self.interest_function_checkbox_3.pack(side=tk.LEFT, padx=10, pady=10)
+            self.interest_function_checkbox_3.pack(side=tk.LEFT, padx=10, pady=5)
             self.direction_distance_function = tk.StringVar()
             self.direction_combobox_3 = ttk.Combobox(self.interest_function_frame_3,
                                                      textvariable=self.direction_distance_function, state="readonly")
             self.direction_combobox_3['values'] = ("Max", "Min")
-            self.direction_combobox_3.pack(side=tk.RIGHT, padx=10, pady=10)
+            self.direction_combobox_3.pack(side=tk.RIGHT, padx=10, pady=5)
             self.direction_combobox_3.current(1)
 
             # create a frame for visualization options
             self.visualization_frame = tk.Frame(self.master)
-            self.visualization_frame.pack(side=tk.BOTTOM, padx=10, pady=10)
+            self.visualization_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=5, expand=True)
             self.visualization_label = tk.Label(self.visualization_frame, text="Visualization row number (min. 2):")
-            self.visualization_label.pack(side=tk.LEFT, padx=10, pady=10)
+            self.visualization_label.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=5, expand=True)
             self.visualization_row_entry = tk.Entry(self.visualization_frame, width=10)
-            self.visualization_row_entry.pack(side=tk.LEFT, padx=10, pady=10)
+            self.visualization_row_entry.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=5, expand=True)
             self.visualization_col_label = tk.Label(self.visualization_frame, text="Visualization column number:")
-            self.visualization_col_label.pack(side=tk.LEFT, padx=10, pady=10)
+            self.visualization_col_label.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=5, expand=True)
             self.visualization_col_entry = tk.Entry(self.visualization_frame, width=10)
-            self.visualization_col_entry.pack(side=tk.LEFT, padx=10, pady=10)
+            self.visualization_col_entry.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=5, expand=True)
 
         else:
             messagebox.showerror("Error", "You need to select case id, activity, timestamp, outcome,"
@@ -328,15 +333,15 @@ class GUI_IMOPD_IKNL_tool:
 
             self.progress_bar = ttk.Progressbar(self.result_window, orient=tk.HORIZONTAL, length=900,
                                                 mode='indeterminate')
-            self.progress_bar.pack(side=tk.TOP, padx=10, pady=10)
+            self.progress_bar.pack(side=tk.TOP, padx=10, pady=5)
 
             # add text holder for recieving input from user
             self.text_holder = tk.Text(self.result_window, height=1, width=50)
-            self.text_holder.pack(side=tk.TOP, padx=10, pady=10)
+            self.text_holder.pack(side=tk.TOP, padx=10, pady=5)
 
             # add button for getting input from user
             self.get_input_button = tk.Button(self.result_window, text="Pattern Extension", command=self.extension)
-            self.get_input_button.pack(side=tk.TOP, padx=10, pady=10)
+            self.get_input_button.pack(side=tk.TOP, padx=10, pady=5)
 
             # create a frame for showing the results
             self.result_frame = tk.Frame(self.result_window)
@@ -355,7 +360,7 @@ class GUI_IMOPD_IKNL_tool:
             # add a message on top the table
             self.table_result_text = tk.Label(self.table_result_frame, text="Right click on your desired pattern to"
                                                                             " put in its name on the clipboard")
-            self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
+            self.table_result_text.pack(side=tk.TOP, padx=10, pady=5)
             # add tree widget for showing the results
             tree = self.creat_table(self.table_result_frame)
             # create a new thread for running the detection
@@ -531,12 +536,12 @@ class GUI_IMOPD_IKNL_tool:
 
             # add text holder for recieving input from user
             text_holder = tk.Text(self.tab1, height=1, width=50)
-            text_holder.pack(side=tk.TOP, padx=10, pady=10)
+            text_holder.pack(side=tk.TOP, padx=10, pady=5)
 
             # add button for getting input from user
             self.get_input_button = tk.Button(self.tab1, text="Pattern Extension",
                                               command=lambda: self.extension_more(text_holder))
-            self.get_input_button.pack(side=tk.TOP, padx=10, pady=10)
+            self.get_input_button.pack(side=tk.TOP, padx=10, pady=5)
 
             # # show results on canvas
             self.result_canvas2 = tk.Canvas(self.tab1)
@@ -549,7 +554,7 @@ class GUI_IMOPD_IKNL_tool:
             # add a message on top the table
             self.table_result_text = tk.Label(table_result_frame, text="Right click on your desired pattern to"
                                                                        " put in its name on the clipboard")
-            self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
+            self.table_result_text.pack(side=tk.TOP, padx=10, pady=5)
 
             # add tree widget for showing the results
             tree = self.creat_table(table_result_frame)
@@ -604,7 +609,7 @@ class GUI_IMOPD_IKNL_tool:
             else:
                 Trace_graph = self.EventLog_graphs[case].copy()
 
-            self.Patterns_Dictionary = Pattern_extension(case_data, Trace_graph, Core_activity,
+            self.Patterns_Dictionary, _ = Pattern_extension(case_data, Trace_graph, Core_activity,
                                                          self.case_id, self.Patterns_Dictionary,
                                                          self.Max_gap_between_events)
 
@@ -665,9 +670,10 @@ class GUI_IMOPD_IKNL_tool:
 
             fig, ax = plot_patterns(self.Patterns_Dictionary, row['patterns'], self.color_act_dict
                                     , pattern_attributes, dim=(row_numbers, col_numbers))
-
+            print(self.categorical_attributes)
             fig, ax = plot_dashboard(fig, ax, self.patient_data, self.numerical_attributes,
                                      self.categorical_attributes, tab_name)
+
 
             # Create vertical scrollbar
             scrollbary = tk.Scrollbar(tab, orient=tk.VERTICAL)
@@ -765,12 +771,12 @@ class GUI_IMOPD_IKNL_tool:
 
             # add text holder for recieving input from user
             text_holder = tk.Text(self.tab1, height=1, width=50)
-            text_holder.pack(side=tk.TOP, padx=10, pady=10)
+            text_holder.pack(side=tk.TOP, padx=10, pady=5)
 
             # add button for getting input from user
             self.get_input_button = tk.Button(self.tab1, text="Pattern Extension",
                                               command=lambda: self.extension_more(text_holder))
-            self.get_input_button.pack(side=tk.TOP, padx=10, pady=10)
+            self.get_input_button.pack(side=tk.TOP, padx=10, pady=5)
 
             # # show results on canvas
             self.result_canvas2 = tk.Canvas(self.tab1)
@@ -783,7 +789,7 @@ class GUI_IMOPD_IKNL_tool:
             # add a message on top the table
             self.table_result_text = tk.Label(table_result_frame, text="Right click on your desired pattern to"
                                                                        " put in its name on the clipboard")
-            self.table_result_text.pack(side=tk.TOP, padx=10, pady=10)
+            self.table_result_text.pack(side=tk.TOP, padx=10, pady=5)
 
             # add tree widget for showing the results
             tree = self.creat_table(table_result_frame)
@@ -917,41 +923,41 @@ class GUI_IMOPD_IKNL_tool:
 
             # add text holder for receiving input from user below
             setting_frame = tk.Frame(self.Automatic_detection_window)
-            setting_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+            setting_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
             text_holder_label = tk.Label(setting_frame, text="Max extension step: ")
-            text_holder_label.pack(side=tk.LEFT, padx=10, pady=10)
+            text_holder_label.pack(side=tk.LEFT, padx=10, pady=5)
             text_holder = tk.Entry(setting_frame, width=5)
-            text_holder.pack(side=tk.LEFT, padx=10, pady=10)
+            text_holder.pack(side=tk.LEFT, padx=10, pady=5)
 
             eventual_label = tk.Label(setting_frame, text="Max gap between events: ")
-            eventual_label.pack(side=tk.LEFT, padx=10, pady=10)
+            eventual_label.pack(side=tk.LEFT, padx=10, pady=5)
             eventual_holder = tk.Entry(setting_frame, width=5)
-            eventual_holder.pack(side=tk.LEFT, padx=10, pady=10)
+            eventual_holder.pack(side=tk.LEFT, padx=10, pady=5)
 
             test_label = tk.Label(setting_frame, text="Testing percentage: ")
-            test_label.pack(side=tk.LEFT, padx=10, pady=10)
+            test_label.pack(side=tk.LEFT, padx=10, pady=5)
             test_holder = tk.Entry(setting_frame, width=5)
-            test_holder.pack(side=tk.LEFT, padx=10, pady=10)
+            test_holder.pack(side=tk.LEFT, padx=10, pady=5)
 
             # get the location to save the results of the automatic detection
             folder_frame = tk.Frame(self.Automatic_detection_window)
-            folder_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+            folder_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
             folder_label = tk.Label(folder_frame, text="No folder selected", borderwidth=1,
                                     relief="solid",
                                     width=50, background="white", anchor="w", padx=5, pady=5, justify="left")
-            folder_label.pack(side=tk.LEFT, padx=10, pady=10)
+            folder_label.pack(side=tk.LEFT, padx=10, pady=5)
 
             select_file_button = tk.Button(folder_frame, text="Select folder",
                                            command=lambda: self.select_folder(folder_label))
-            select_file_button.pack(side=tk.LEFT, padx=10, pady=10)
+            select_file_button.pack(side=tk.LEFT, padx=10, pady=5)
 
             # add button to start the automatic detection
             button_frame = tk.Frame(self.Automatic_detection_window)
-            button_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+            button_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
             button = tk.Button(button_frame, text="Start Automatic detection",
                                command=lambda: self.start_automatic_detection(text_holder, eventual_holder,
                                                                               test_holder))
-            button.pack(side=tk.BOTTOM, padx=10, pady=10)
+            button.pack(side=tk.BOTTOM, padx=10, pady=5)
 
     def select_folder(self, folder_label):
         # get file path for only csv files
@@ -966,10 +972,10 @@ class GUI_IMOPD_IKNL_tool:
     def start_automatic_detection(self, text_holder, eventual_holder, test_holder):
         # creat a frame for loading message
         self.loading_frame = tk.Frame(self.Automatic_detection_window)
-        self.loading_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
+        self.loading_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=5)
         self.loading_text = "Loading... \n Please wait..."
         self.loading_label = tk.Label(self.loading_frame, text=self.loading_text, justify="left")
-        self.loading_label.pack(side=tk.BOTTOM, padx=10, pady=10)
+        self.loading_label.pack(side=tk.BOTTOM, padx=10, pady=5)
 
         Max_extension_step = text_holder.get()
         Max_extension_step = int(Max_extension_step)
@@ -1017,4 +1023,5 @@ root = tk.Tk()
 # add title to the main window
 root.title("IMPresseD: Interactive Multi-Interest Process Pattern Discovery")
 app = GUI_IMOPD_IKNL_tool(master=root)
+
 app.master.mainloop()

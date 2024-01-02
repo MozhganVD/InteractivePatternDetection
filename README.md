@@ -6,7 +6,7 @@ This repository provides implementations for discovering outcome-oriented proces
 To use the implemented tool, you need to have a labeled event log in .cvs format (Use the event log in this repo as example), then clone the project and follow the below steps.
 To see how the tool works in both interactive and automatic modes, you can watch a video demonstration [here](https://www.youtube.com/watch?v=Rrk5La8vwYU&lc=UgzSP2ZleWmtPbPZsP54AaABAg).
 
-Install dependencies (Python 3.8.0) :
+Install dependencies (Python 3.11.0) :
 
 ```pip install -r requirements.txt```
 
